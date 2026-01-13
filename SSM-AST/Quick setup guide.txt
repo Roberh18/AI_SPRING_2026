@@ -1,0 +1,57 @@
+Install packages:
+pip3 install --user torch torchaudio torchvision jiwer "lightning>=2.0" matplotlib "datasets[audio]==2.18.0" soundfile librosa && pip3 install --user "numpy<2.0" --force-reinstall && python3 -c "import torch, torchaudio, jiwer, lightning, datasets, numpy, matplotlib; print(' All dependencies installed successfully!')"
+
+
+REQUIREMENTS:
+    torch>=2.0.0
+    torchaudio>=2.0.0
+    torchvision>=0.15.0
+    jiwer>=2.0.0
+    lightning>=2.0.0
+    matplotlib>=3.0.0
+    datasets[audio]==2.18.0
+    soundfile>=0.12.1
+    librosa>=0.10.0
+    numpy<2.0
+
+
+Step-by-Step Installation (if one-liner fails):
+    # Step 1: Core PyTorch
+    pip3 install --user torch torchaudio
+    
+    # Step 2: ML/ASR libraries
+    pip3 install --user jiwer "lightning>=2.0"
+    
+    # Step 3: Audio processing (CRITICAL: specific version)
+    pip3 install --user "datasets[audio]==2.18.0" soundfile librosa
+    
+    # Step 4: Plotting
+    pip3 install --user matplotlib
+    
+    # Step 5: Fix NumPy compatibility (MUST be last)
+    pip3 install --user "numpy<2.0" --force-reinstall
+    
+    # Step 6: Verify
+    python3 -c "import torch, torchaudio, torchvision, jiwer, lightning, datasets, numpy, matplotlib; print(' Ready!')"
+
+
+QUICK TEST:
+python3 IKT464_Script_AST_SSSM_v2.7.py --exp test --data-path ./hub_data/librispeech
+
+If you get torchcodec errors:
+    pip3 uninstall -y torchcodec
+    export HF_DATASETS_DISABLE_TORCHCODEC=1
+
+If you get NumPy errors:
+    pip3 install --user "numpy<2.0" --force-reinstall
+
+If datasets won't install:
+    pip3 uninstall -y datasets
+    pip3 install --user "datasets[audio]==2.18.0"
+
+
+
+
+
+
+
