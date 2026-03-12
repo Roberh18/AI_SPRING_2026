@@ -5,23 +5,22 @@ SSM-ASR: Hierarchical States + Gating
 EXPERIMENTS: Architecture ablation
 
     # Exp01: Baseline 336 x 12 (8.56M Params)
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --no-hierarchical --no-gating --exp-name v74_baseline_W336_D12 --seed 456 --d-model 336 --n-layers 12 --epochs 30
+    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --no-hierarchical --no-gating --exp-name baseline_W336_D12 --seed 456 --d-model 336 --n-layers 12 --epochs 30
     
     # Exp02: Baseline 336 x 12 + Hierarchical (8.56M Params)
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --no-gating --exp-name v74_hier_W336_D12 --seed 456 --d-model 336 --n-layers 12 --epochs 30
+    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --no-gating --exp-name hier_W336_D12 --seed 456 --d-model 336 --n-layers 12 --epochs 30
 
     # Exp03: Baseline 312 x 12 + Gating (8.56M Params)
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --no-hierarchical --exp-name v74_gating_W312_D12 --seed 456 --d-model 312 --n-layers 12 --epochs 30
+    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --no-hierarchical --exp-name gating_W312_D12 --seed 456 --d-model 312 --n-layers 12 --epochs 30
 
     # Exp04: Baseline 312 x 12 + Gating + Hierarchical (8.56M Params)
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --exp-name v74_hier_gating_W312_D12 --seed 456 --d-model 312 --n-layers 12 --epochs 30
+    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --exp-name hier_gating_W312_D12 --seed 456 --d-model 312 --n-layers 12 --epochs 30
 
 
 # Quick test run
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --exp-name v74_hier_gating_TEST --seed 456 --subset-train 4000 --subset-val 400 --batch-size 16 --d-model 64 --n-layers 6 --epochs 5
+    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --exp-name hier_gating_TEST --seed 456 --subset-train 4000 --subset-val 400 --batch-size 16 --d-model 64 --n-layers 6 --epochs 5
     
 """
-
 
 from __future__ import annotations
 
@@ -126,6 +125,7 @@ def override_print_with_logger():
     import builtins
     builtins.print = logged_print
 
+
 print("\n")
 print("SSM-ASR: HIERARCHICAL STATES + GATING")
 print("\n")
@@ -181,8 +181,8 @@ _amp_to_db = torchaudio.transforms.AmplitudeToDB(stype="power", top_db=80.0)
 def extract_features(
     waveform: torch.Tensor,
     sample_rate: int,
-    apply_speed_perturb: bool = False,
-    speed_perturb_factors: Tuple[float, ...] = (0.9, 1.0, 1.1)
+    apply_speed_perturb: bool=False,
+    speed_perturb_factors: Tuple[float, ...]=(0.9, 1.0, 1.1)
 ) -> torch.Tensor:
     """
     Extract log mel-spectrogram features with optional speed perturbation.
@@ -211,7 +211,7 @@ def extract_features(
 def apply_speed_perturbation(
     waveform: torch.Tensor,
     sample_rate: int,
-    speed_factor: float = 1.0
+    speed_factor: float=1.0
 ) -> torch.Tensor:
     """
     Apply speed perturbation to waveform.
@@ -242,10 +242,10 @@ class SpecAugment(nn.Module):
     
     def __init__(
         self,
-        freq_mask_param: int = 15,
-        time_mask_param: int = 50,
-        n_freq_masks: int = 2,
-        n_time_masks: int = 2,
+        freq_mask_param: int=15,
+        time_mask_param: int=50,
+        n_freq_masks: int=2,
+        n_time_masks: int=2,
     ):
         super().__init__()
         self.freq_mask = torchaudio.transforms.FrequencyMasking(freq_mask_param)
@@ -276,11 +276,11 @@ class LibriSpeechDataset(Dataset):
     def __init__(
             self,
             hf_dataset,
-            subset: Optional[int] = None,
-            split_name: str = "",
-            use_specaugment: bool = False,
-            use_speed_perturb: bool = False,
-            speed_perturb_factors: Tuple[float, ...] = (0.9, 1.0, 1.1),
+            subset: Optional[int]=None,
+            split_name: str="",
+            use_specaugment: bool=False,
+            use_speed_perturb: bool=False,
+            speed_perturb_factors: Tuple[float, ...]=(0.9, 1.0, 1.1),
         ):
         self.split_name = split_name
         self.use_speed_perturb = use_speed_perturb 
@@ -310,7 +310,7 @@ class LibriSpeechDataset(Dataset):
             print(f"  Speed perturbation: DISABLED")  
 
         sample_size = min(1000, len(self.dataset))
-        sample_indices = np.linspace(0, len(self.dataset)-1, sample_size, dtype=int)
+        sample_indices = np.linspace(0, len(self.dataset) - 1, sample_size, dtype=int)
         
         audio_lengths = []
         text_lengths = []
@@ -328,7 +328,6 @@ class LibriSpeechDataset(Dataset):
               f"mean={np.mean(audio_lengths)/SAMPLE_RATE:.1f}s")
         print(f"  Text length: min={min(text_lengths)}, max={max(text_lengths)}, "
               f"mean={np.mean(text_lengths):.1f}")
-
     
     def __len__(self):
         return len(self.dataset)
@@ -370,7 +369,7 @@ def collate_fn(batch):
     features_padded = torch.zeros(len(batch), max_len, n_mels)
     
     for i, f in enumerate(features):
-        features_padded[i, :f.shape[0], :] = f
+        features_padded[i,:f.shape[0],:] = f
     
     text_ids = [torch.LongTensor(text_to_ids(t)) for t in texts]
     text_lengths = torch.LongTensor([len(t) for t in text_ids])
@@ -384,7 +383,7 @@ def collate_fn(batch):
     
     for i, t in enumerate(text_ids):
         if len(t) > 0:
-            text_ids_padded[i, :len(t)] = t
+            text_ids_padded[i,:len(t)] = t
     
     return {
         'features': features_padded,
@@ -398,7 +397,7 @@ def collate_fn(batch):
 class ConvSubsample(nn.Module):
     """4x subsampling via two strided convolutions (from v4.0)."""
     
-    def __init__(self, in_channels: int = 80, out_channels: int = 256):
+    def __init__(self, in_channels: int=80, out_channels: int=256):
         super().__init__()
         self.conv1 = nn.Conv1d(in_channels, out_channels // 2, kernel_size=5, stride=2, padding=2)
         self.conv2 = nn.Conv1d(out_channels // 2, out_channels, kernel_size=5, stride=2, padding=2)
@@ -433,12 +432,12 @@ class HierarchicalSelectiveSSMLayer(nn.Module):
     def __init__(
         self,
         d_model: int,
-        dropout: float = 0.1,
-        layer_idx: int = 0,
-        n_layers: int = 1,
-        use_hierarchical: bool = True,
-        use_gating: bool = True,
-        enable_diagnostics: bool = False,
+        dropout: float=0.1,
+        layer_idx: int=0,
+        n_layers: int=1,
+        use_hierarchical: bool=True,
+        use_gating: bool=True,
+        enable_diagnostics: bool=False,
     ):
         super().__init__()
         self.d_model = d_model
@@ -591,9 +590,9 @@ class HierarchicalSelectiveSSMLayer(nn.Module):
         ys = []
         
         for t in range(T):
-            xt = x_proj[:, t, :]
-            s = at[:, t, :] * s + bt[:, t, :] * xt
-            yt = ct[:, t, :] * s + dt[:, t, :] * xt
+            xt = x_proj[:, t,:]
+            s = at[:, t,:] * s + bt[:, t,:] * xt
+            yt = ct[:, t,:] * s + dt[:, t,:] * xt
             ys.append(yt)
         
         y = torch.stack(ys, dim=1)
@@ -624,13 +623,13 @@ class SSMEncoder(nn.Module):
     """Stack of SSM layers."""
     
     def __init__(
-        self, 
-        d_model: int = 256, 
-        n_layers: int = 6, 
-        dropout: float = 0.1,
-        use_hierarchical: bool = True,
-        use_gating: bool = True,  
-        enable_diagnostics: bool = False,
+        self,
+        d_model: int=256,
+        n_layers: int=6,
+        dropout: float=0.1,
+        use_hierarchical: bool=True,
+        use_gating: bool=True,
+        enable_diagnostics: bool=False,
     ):
         super().__init__()
 
@@ -678,19 +677,18 @@ class SSMEncoder(nn.Module):
         return self.final_norm(x)
 
 
-
 class ASRModel(nn.Module):
     """Complete ASR model with stable architecture."""
     
     def __init__(
         self,
         n_classes: int,
-        d_model: int = 256,
-        n_layers: int = 6,
-        dropout: float = 0.1,
-        use_hierarchical: bool = True,
-        use_gating: bool = True,
-        enable_diagnostics: bool = False,
+        d_model: int=256,
+        n_layers: int=6,
+        dropout: float=0.1,
+        use_hierarchical: bool=True,
+        use_gating: bool=True,
+        enable_diagnostics: bool=False,
     ):
         super().__init__()
         
@@ -744,7 +742,6 @@ class ASRModel(nn.Module):
         return logits, lengths
 
 
-
 def ctc_greedy_decode(
     logits: torch.Tensor,
     lengths: torch.Tensor
@@ -770,22 +767,21 @@ def ctc_greedy_decode(
     return hyps
 
 
-
 class LitASR(L.LightningModule):
     """Lightning module for training."""
     
     def __init__(
         self,
-        d_model: int = 256,
-        n_layers: int = 6,
-        dropout: float = 0.1,
-        learning_rate: float = 1e-3,
-        warmup_steps: int = 500,
-        weight_decay: float = 0.05,
-        use_speed_perturb: bool = False,
-        use_hierarchical: bool = True,
-        use_gating: bool = True,
-        enable_diagnostics: bool = False,
+        d_model: int=256,
+        n_layers: int=6,
+        dropout: float=0.1,
+        learning_rate: float=1e-3,
+        warmup_steps: int=500,
+        weight_decay: float=0.05,
+        use_speed_perturb: bool=False,
+        use_hierarchical: bool=True,
+        use_gating: bool=True,
+        enable_diagnostics: bool=False,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -833,7 +829,7 @@ class LitASR(L.LightningModule):
         
         # Flatten targets for CTC
         targets = torch.cat([
-            text_ids[i, :text_lengths[i]]
+            text_ids[i,:text_lengths[i]]
             for i in range(text_ids.size(0))
         ]).long()
         
@@ -849,11 +845,11 @@ class LitASR(L.LightningModule):
 
         batch_size = features.shape[0]
         self.log(
-            'train_loss', 
-            loss, 
-            prog_bar=True, 
-            on_step=True, 
-            on_epoch=True, 
+            'train_loss',
+            loss,
+            prog_bar=True,
+            on_step=True,
+            on_epoch=True,
             batch_size=batch_size
         )
         self.train_step_outputs.append(loss.detach())
@@ -864,7 +860,7 @@ class LitASR(L.LightningModule):
         if torch.cuda.is_available():
             # Get peak memory since last reset
             peak_memory = torch.cuda.max_memory_allocated(0) / (1024 ** 3)
-            self.log('gpu_memory_peak_gb', peak_memory, on_epoch=True, 
+            self.log('gpu_memory_peak_gb', peak_memory, on_epoch=True,
                     prog_bar=False, logger=True, sync_dist=True)
             # Reset peak memory tracker for next epoch
             torch.cuda.reset_peak_memory_stats(0)
@@ -887,7 +883,7 @@ class LitASR(L.LightningModule):
         # Calculate loss
         log_probs = F.log_softmax(logits, dim=-1).transpose(0, 1)
         targets = torch.cat([
-            text_ids[i, :text_lengths[i]] for i in range(text_ids.size(0))
+            text_ids[i,:text_lengths[i]] for i in range(text_ids.size(0))
         ]).long()
         loss = self.ctc_loss(log_probs, targets, lengths, text_lengths)
         
@@ -897,7 +893,7 @@ class LitASR(L.LightningModule):
         # WER Calculation
         wers = []
         for i, hyp in enumerate(hyps):
-            ref = ids_to_text(text_ids[i, :text_lengths[i]].tolist())
+            ref = ids_to_text(text_ids[i,:text_lengths[i]].tolist())
             hyp_text = ids_to_text(hyp)
             wers.append(jiwer_wer(ref, hyp_text))
             
@@ -915,9 +911,9 @@ class LitASR(L.LightningModule):
         mean_wer = float(np.mean(wers))
         
         self.log(
-            f'{prefix}_wer_{suffix}', 
-            mean_wer, 
-            prog_bar=True, on_step=False, on_epoch=True, 
+            f'{prefix}_wer_{suffix}',
+            mean_wer,
+            prog_bar=True, on_step=False, on_epoch=True,
             add_dataloader_idx=False, batch_size=batch_size
         )
         
@@ -993,7 +989,6 @@ class LitASR(L.LightningModule):
                 'interval': 'step',
             }
         }
-        
 
 
 class HierarchyFreezeCallback(Callback):
@@ -1002,7 +997,8 @@ class HierarchyFreezeCallback(Callback):
     for the first N epochs to force the model to utilize the imposed 
     time-scale hierarchy, then unfreezes them to allow fine-tuning.
     """
-    def __init__(self, unfreeze_epoch: int = 5):
+
+    def __init__(self, unfreeze_epoch: int=5):
         super().__init__()
         self.unfreeze_epoch = unfreeze_epoch
         self.frozen = False
@@ -1025,9 +1021,9 @@ class HierarchyFreezeCallback(Callback):
         # Navigate to the encoders. 
         # Note: Handle both standard and BiDirectional cases
         encoders = []
-        if hasattr(pl_module.model.encoder, 'layers'): # Standard
+        if hasattr(pl_module.model.encoder, 'layers'):  # Standard
             encoders.append(pl_module.model.encoder)
-        elif hasattr(pl_module.model.encoder, 'fwd_encoder'): # BiDirectional
+        elif hasattr(pl_module.model.encoder, 'fwd_encoder'):  # BiDirectional
             encoders.append(pl_module.model.encoder.fwd_encoder)
             encoders.append(pl_module.model.encoder.bwd_encoder)
             
@@ -1047,7 +1043,7 @@ class HierarchyFreezeCallback(Callback):
 class CleanProgressCallback(Callback):
     """Clean progress reporting without special characters."""
     
-    def __init__(self, print_every_n_batches: int = 50):
+    def __init__(self, print_every_n_batches: int=50):
         super().__init__()
         self.print_every_n_batches = print_every_n_batches
         self.epoch_start_time = None
@@ -1134,11 +1130,11 @@ class CleanProgressCallback(Callback):
             print(f"  Current LR:        {current_lr:.6f}")
             if torch.cuda.is_available():
                 # Log and reset peak memory for the plot
-                peak_alloc = torch.cuda.max_memory_allocated() / 1024**3
-                peak_res = torch.cuda.max_memory_reserved() / 1024**3
+                peak_alloc = torch.cuda.max_memory_allocated() / 1024 ** 3
+                peak_res = torch.cuda.max_memory_reserved() / 1024 ** 3
                 self.history['gpu_memory_allocated'].append(peak_alloc)
                 self.history['gpu_memory_reserved'].append(peak_res)
-                torch.cuda.reset_peak_memory_stats(trainer.strategy.root_device) # Reset for next epoch
+                torch.cuda.reset_peak_memory_stats(trainer.strategy.root_device)  # Reset for next epoch
                 print(f"  GPU Memory (Peak): {peak_alloc:.2f} GB")
             
             print(f"{'-'*80}")
@@ -1147,7 +1143,6 @@ class CleanProgressCallback(Callback):
         total_time = time.time() - self.fit_start_time
         total_hours = int(total_time // 3600)
         total_min = int((total_time % 3600) // 60)
-        
 
         print("Training Complete.")
         print(f"Total training time: {total_hours}h {total_min}m")
@@ -1165,7 +1160,6 @@ def get_param_counts(model: nn.Module) -> Dict[str, int]:
     except Exception as e:
         print(f"Warning: Could not get param counts. {e}")
         return {}
-
 
 
 def train(config: Config):
@@ -1206,10 +1200,10 @@ def train(config: Config):
 
     # Load datasets
     print(f"Loading datasets...")
-    ds_dict_clean = load_from_disk(config.data_path)               # ./hub_data/librispeech
+    ds_dict_clean = load_from_disk(config.data_path)  # ./hub_data/librispeech
     
     if config.dataset_config == "460h":
-        ds_dict_other = load_from_disk(config.data_path + "_other")    # ./hub_data/librispeech_other
+        ds_dict_other = load_from_disk(config.data_path + "_other")  # ./hub_data/librispeech_other
         print(f"Creating merged 460h dataset (Lazy Concatenation)...")
         train_dataset = concatenate_datasets([ds_dict_clean["train.100"], ds_dict_clean["train.360"]])
         train_split_name = "TRAIN (clean.100 + clean.360)"
@@ -1244,13 +1238,13 @@ def train(config: Config):
     if use_dual_validation:
         # 460h mode: validate on both dev-clean and dev-other
         val_ds_clean = LibriSpeechDataset(
-            ds_dict_clean["validation"], 
+            ds_dict_clean["validation"],
             subset=config.subset_val,
             split_name="DEV-CLEAN",
             use_specaugment=False
         )
         val_ds_other = LibriSpeechDataset(
-            ds_dict_other["validation"], 
+            ds_dict_other["validation"],
             subset=config.subset_val,
             split_name="DEV-OTHER",
             use_specaugment=False
@@ -1279,7 +1273,7 @@ def train(config: Config):
     else:
         # 100h mode: validate on dev-clean only
         val_ds = LibriSpeechDataset(
-            ds_dict_clean["validation"], 
+            ds_dict_clean["validation"],
             subset=config.subset_val,
             split_name="DEV-CLEAN",
             use_specaugment=False
@@ -1337,7 +1331,7 @@ def train(config: Config):
     checkpoint_callback = ModelCheckpoint(
         monitor=monitor_metric,
         dirpath=checkpoint_dir,
-        filename=f"best_{{epoch}}_{{{monitor_metric}:.3f}}", 
+        filename=f"best_{{epoch}}_{{{monitor_metric}:.3f}}",
         mode='min',
         save_top_k=3,
         save_last=True,
@@ -1390,7 +1384,6 @@ def train(config: Config):
     print(f"   Best checkpoint: {best_path}")
     print(f"   Results saved:   {checkpoint_dir}")
 
-
     # Final Evaluation
     print("\nEvaluating on test sets...")
     print(f"Loading best model: {best_path}")
@@ -1400,14 +1393,14 @@ def train(config: Config):
         ds_dict_other = load_from_disk(config.data_path + "_other")
 
     test_ds_clean = LibriSpeechDataset(
-        ds_dict_clean["test"], 
+        ds_dict_clean["test"],
         split_name="TEST-CLEAN",
         use_specaugment=False
     )
     test_loader_clean = DataLoader(test_ds_clean, batch_size=config.batch_size, collate_fn=collate_fn, num_workers=config.num_workers)
 
     test_ds_other = LibriSpeechDataset(
-        ds_dict_other["test"], 
+        ds_dict_other["test"],
         split_name="TEST-OTHER",
         use_specaugment=False
     )
@@ -1440,8 +1433,8 @@ def train(config: Config):
     if param_counts:
         visualizer.plot_parameter_breakdown(param_counts)
 
-    # 3. Run the fixed hierarchical dynamics plot
-    visualizer.visualize_hierarchical_dynamics(model) # This is the fixed version
+    # 3. Hierarchical dynamics plot
+    visualizer.visualize_hierarchical_dynamics(model) 
 
     # 4. State dynamics heatmap
     print(" Generating: state_dynamics_heatmap.png")
@@ -1468,15 +1461,14 @@ def train(config: Config):
         sorted_results = sorted(model.final_detailed_results, key=lambda x: x['wer'])
         examples = [
             sorted_results[0],  # Best
-            sorted_results[len(sorted_results)//4],  # Good
-            sorted_results[len(sorted_results)//2],  # Medium
-            sorted_results[3*len(sorted_results)//4],  # Bad
+            sorted_results[len(sorted_results) // 4],  # Good
+            sorted_results[len(sorted_results) // 2],  # Medium
+            sorted_results[3 * len(sorted_results) // 4],  # Bad
             sorted_results[-1],  # Worst
         ]
         visualizer.plot_example_predictions(examples[:5])  # Show 5 examples
     else:
         print("  Skipped: No detailed validation results available.")
-
 
 
 plt.rcParams.update({
@@ -1495,11 +1487,11 @@ plt.rcParams.update({
 
 # Color palette
 COLORS = {
-    'primary': '#2E86AB',    # Blue
+    'primary': '#2E86AB',  # Blue
     'secondary': '#A23B72',  # Purple
-    'accent': '#F18F01',     # Orange
-    'success': '#06A77D',    # Green
-    'baseline': '#808080',   # Gray
+    'accent': '#F18F01',  # Orange
+    'success': '#06A77D',  # Green
+    'baseline': '#808080',  # Gray
 }
 
 
@@ -1512,8 +1504,8 @@ class Visualizer:
     def __init__(
         self,
         log_dir: str,
-        output_dir: str = 'model_figures',
-        exp_name: str = 'experiment'
+        output_dir: str='model_figures',
+        exp_name: str='experiment'
     ):
         """
         Initialize visualizer.
@@ -1560,7 +1552,6 @@ class Visualizer:
                     print(f" Generated: {name}.png")
                 except Exception as e:
                     print(f" Failed: {name}.png - {e}")
-            
 
             print(f"Figures saved to: {self.output_dir}")
             
@@ -1574,9 +1565,8 @@ class Visualizer:
         if not csv_files:
             raise FileNotFoundError(f"No metrics.csv found in {self.log_dir}")
         return max(csv_files, key=lambda p: p.stat().st_mtime)
-
     
-    def plot_training_curves(self, csv_path: Path):  
+    def plot_training_curves(self, csv_path: Path): 
         """Plot training and validation loss curves."""
         try:
             # Read the CSV file
@@ -1609,7 +1599,7 @@ class Visualizer:
             }).reset_index()
             
             # Plot losses
-            ax.plot(epoch_data['epoch'], epoch_data[train_loss_col], 
+            ax.plot(epoch_data['epoch'], epoch_data[train_loss_col],
                     'b-', label='Train Loss', linewidth=2, marker='o', markersize=4)
             ax.plot(epoch_data['epoch'], epoch_data[val_loss_col],
                     'r-', label='Val Loss', linewidth=2, marker='o', markersize=4)
@@ -1665,15 +1655,13 @@ class Visualizer:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
     
-    def plot_hierarchical_initialization(self, n_layers: int = 12):
+    def plot_hierarchical_initialization(self, n_layers: int=12):
             """Plot hierarchical initialization values across layers."""
             layers = np.arange(n_layers)
             # Avoid division by zero if n_layers=1
             denom = max(1, n_layers - 1)
             layer_progress = layers / denom
             
-            # CORRECTED to match your Config (Early=0.15, Late=0.85)
-            # These formulas now match the logic in HierarchicalSelectiveSSMLayer
             a_early, a_late = 0.15, 0.85
             b_early, b_late = 0.35, 0.12
             c_early, c_late = -0.35, 0.20
@@ -1714,9 +1702,9 @@ class Visualizer:
     
     def plot_learning_rate_schedule(
         self,
-        learning_rate: float = 1e-3,
-        warmup_steps: int = 500,
-        total_steps: int = 26700
+        learning_rate: float=1e-3,
+        warmup_steps: int=500,
+        total_steps: int=26700
     ):
         """Plot learning rate schedule."""
         steps = np.arange(total_steps)
@@ -1755,7 +1743,7 @@ class Visualizer:
     
     def plot_parameter_breakdown(
         self,
-        components: Optional[Dict[str, int]] = None
+        components: Optional[Dict[str, int]]=None
     ):
         """Plot parameter distribution across model components."""
         if components is None:
@@ -1783,7 +1771,6 @@ class Visualizer:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
 
-
     def visualize_hierarchical_dynamics(self, model):
             """Visualize learned temporal dynamics across layers"""
             print(" Generating: hierarchical_dynamics.png (Learned Parameters)")
@@ -1798,7 +1785,7 @@ class Visualizer:
             
             # Loop through the model's encoder layers
             for idx, layer in enumerate(model.model.encoder.layers):
-                if hasattr(layer, 'a0'): # Check if it's the right layer type
+                if hasattr(layer, 'a0'):  # Check if it's the right layer type
                     layer_indices.append(idx)
                     # Get mean of the learned base parameters
                     a_params.append(layer.a0.detach().mean().cpu().item())
@@ -1842,9 +1829,9 @@ class Visualizer:
         
         epochs = range(1, len(history['gpu_memory_allocated']) + 1)
         
-        ax.plot(epochs, history['gpu_memory_allocated'], 
+        ax.plot(epochs, history['gpu_memory_allocated'],
                 label='Allocated', color=COLORS['primary'], linewidth=2)
-        ax.plot(epochs, history['gpu_memory_reserved'], 
+        ax.plot(epochs, history['gpu_memory_reserved'],
                 label='Reserved', color=COLORS['secondary'], linewidth=2)
         
         ax.set_xlabel('Epoch', fontsize=12)
@@ -1869,8 +1856,8 @@ class Visualizer:
         bin_wers = []
         bin_labels = []
         
-        for i in range(len(bins)-1):
-            mask = [(d >= bins[i] and d < bins[i+1]) for d in durations]
+        for i in range(len(bins) - 1):
+            mask = [(d >= bins[i] and d < bins[i + 1]) for d in durations]
             if any(mask):
                 bin_wers.append(np.mean([w for w, m in zip(wers, mask) if m]))
                 bin_labels.append(f'{bins[i]}-{bins[i+1]}s')
@@ -1893,7 +1880,7 @@ class Visualizer:
         
         # Sample subset of dimensions for visualization
         sample_dims = min(64, d_model)
-        dim_indices = np.linspace(0, d_model-1, sample_dims, dtype=int)
+        dim_indices = np.linspace(0, d_model - 1, sample_dims, dtype=int)
         
         a_matrix = np.zeros((n_layers, sample_dims))
         b_matrix = np.zeros((n_layers, sample_dims))
@@ -1937,7 +1924,7 @@ class Visualizer:
                 wer_col: 'mean'
             }).reset_index()
             
-            ax1.plot(epoch_data['epoch'], epoch_data[loss_col], 
+            ax1.plot(epoch_data['epoch'], epoch_data[loss_col],
                     label=name, linewidth=2, marker='o', markersize=3)
             ax2.plot(epoch_data['epoch'], epoch_data[wer_col] * 100,
                     label=name, linewidth=2, marker='o', markersize=3)
@@ -1984,6 +1971,7 @@ class Visualizer:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
 
+
 @dataclass
 class Config:
     """Training configuration."""
@@ -1998,14 +1986,14 @@ class Config:
     
     # Training
     batch_size: int = 32
-    num_workers: int = min(4, os.cpu_count() or 1)      # auto-detect
+    num_workers: int = min(4, os.cpu_count() or 1)  # auto-detect
     epochs: int = 30
     learning_rate: float = 1e-3
     warmup_steps: int = 500
     weight_decay: float = 0.05
     gradient_clip_val: float = 5.0
     accumulate_grad_batches: int = 1
-    enable_diagnostics: bool = False       # Diagnostic Logging every 100 batches (at, bt, ct, s)
+    enable_diagnostics: bool = False  # Diagnostic Logging every 100 batches (at, bt, ct, s)
     freeze_epochs: int = 0  # 0 = disabled
     
     # Model
@@ -2020,16 +2008,16 @@ class Config:
     HIER_CONFIG = {
         # State Decay (a): High = Long Memory, Low = Short Memory
         # Note: tanh(0.85) ≈ 0.69 retention, tanh(0.15) ≈ 0.15 retention
-        'A0_EARLY': 0.15,   # Fast decay for acoustic (was 0.85)
-        'A0_LATE':  0.85,   # Slow decay for linguistic (was 0.15)
+        'A0_EARLY': 0.15,  # Fast decay for acoustic (was 0.85)
+        'A0_LATE': 0.85,  # Slow decay for linguistic (was 0.15)
         
         # Input Sensitivity (b): High = Sensitive to new input
-        'B0_EARLY': 0.35,   # High sensitivity for acoustic details
-        'B0_LATE':  0.12,   # Lower sensitivity (filtered input)
+        'B0_EARLY': 0.35,  # High sensitivity for acoustic details
+        'B0_LATE': 0.12,  # Lower sensitivity (filtered input)
         
         # Output Weight (c): High = Stronger contribution to output
-        'C0_EARLY': -0.35,  # Lower state output → sigmoid ≈ 0.41
-        'C0_LATE':  0.20    # Higher state output → sigmoid ≈ 0.55
+        'C0_EARLY':-0.35,  # Lower state output → sigmoid ≈ 0.41
+        'C0_LATE': 0.20  # Higher state output → sigmoid ≈ 0.55
 }
     
     # Augmentation
@@ -2052,8 +2040,6 @@ class Config:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         name = f"ssm_hier{int(self.use_hierarchical)}_gate{int(self.use_gating)}_{timestamp}"
         return name
-
-
 
 
 def main():
@@ -2185,7 +2171,6 @@ def main():
         default=0,
         help='Number of epochs to freeze hierarchical parameters (set to 0 to disable)'
     )
-
     
     args = parser.parse_args()
         
@@ -2223,8 +2208,6 @@ def main():
         
         traceback.print_exc()
         sys.exit(1)
-
-
 
 
 if __name__ == '__main__':
