@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Thesis Figure Generator - Updated for v7.4 Experiment Structure
-================================================================
-Generates comparison plots from experiment output files for the thesis.
+Figure Generator 
+================
+Generates comparison plots from experiment output files.
 
-Expected directory structure (from IKT464_Script_ASR_SSSM_v7_4.py):
+Expected directory structure:
     working_directory/
     ├── checkpoints_v74_baseline_W386_D9/
     │   ├── 0utput_exp-v74_baseline_W386_D9.txt
