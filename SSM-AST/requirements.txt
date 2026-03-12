@@ -1,11 +1,14 @@
+# Install with: pip install -r requirements.txt
+# Or use the one-liner from Quick_setup_guide.txt
 torch>=2.0.0
 torchaudio>=2.0.0
 torchvision>=0.15.0
-jiwer>=2.0.0
 lightning>=2.0.0
-matplotlib>=3.0.0
-datasets[audio]==2.18.0
+jiwer>=2.0.0
 soundfile>=0.12.1
 librosa>=0.10.0
+datasets[audio]==2.18.0
+matplotlib>=3.0.0
 numpy<2.0
-
+pandas>=1.0.0
+ipywidgets>=7.0.0
