@@ -1,0 +1,480 @@
+Logging output to: checkpoints_mamba_dt_bias_hier_100h_W-228_D-24_S-16/0utput_exp-mamba_dt_bias_hier_100h_W-228_D-24_S-16.txt
+
+Experiment Config: mamba_dt_bias_hier_100h_W-228_D-24_S-16
+  data_path..................... hub_data/librispeech
+  train_split................... train.100
+  val_split..................... validation
+  dataset_config................ 100h
+  subset_train.................. None
+  subset_val.................... None
+  batch_size.................... 64
+  num_workers................... 4
+  epochs........................ 30
+  learning_rate................. 0.001
+  warmup_steps.................. 500
+  weight_decay.................. 0.05
+  gradient_clip_val............. 5.0
+  accumulate_grad_batches....... 1
+  enable_diagnostics............ False
+  freeze_epochs................. 0
+  d_model....................... 228
+  n_layers...................... 24
+  dropout....................... 0.1
+  use_hierarchical.............. True
+  use_gating.................... False
+  encoder_type.................. mamba
+  d_state....................... 16
+  d_conv........................ 4
+  expand........................ 2
+  use_cuda_kernels.............. True
+  use_specaugment............... True
+  use_speed_perturb............. False
+  speed_perturb_factors......... (0.9, 1.0, 1.1)
+  precision..................... 16-mixed
+  seed.......................... 456
+  exp_name...................... mamba_dt_bias_hier_100h_W-228_D-24_S-16
+
+Loading datasets from disk...
+
+Dataset: TRAIN (clean train.100)
+  Size: 28539 examples
+  Mode: LAZY LOADING (memory efficient)
+  SpecAugment: ENABLED (Applied before padding)
+  Speed perturbation: DISABLED
+
+Dataset statistics (sampled from 1000 examples):
+  Audio length: min=28400, max=277120, mean=203593
+  Audio duration: min=1.8s, max=17.3s, mean=12.7s
+  Text length: min=19, max=307, mean=185.1
+
+Dataset: DEV-CLEAN
+  Size: 2703 examples
+  Mode: LAZY LOADING (memory efficient)
+  Speed perturbation: DISABLED
+
+Dataset statistics (sampled from 1000 examples):
+  Audio length: min=23120, max=522320, mean=113595
+  Audio duration: min=1.4s, max=32.6s, mean=7.1s
+  Text length: min=3, max=505, mean=105.7
+
+DataLoader Configuration:
+  Train batches per epoch: 446
+  Val batches per epoch (DEV-CLEAN): 43
+
+[Config] 100h mode: Validating on DEV-CLEAN only, monitoring 'val_wer'
+  Batch size: 64
+  Accumulate: 1 (effective: 64)
+
+Training Config:
+   Learning rate: 0.001
+   Warmup steps: 500
+   Weight decay: 0.05
+   SpeedPerturbation: False
+
+Mamba Encoder Configuration:
+  d_model=228, d_state=16, d_conv=4, expand=2
+  n_layers=24, hierarchical=True
+  d_inner=456
+  Backend: CUDA (mamba_ssm)
+
+Hierarchical Dynamics (dt_bias + A_log scaling):
+  Layer  Type        A_scale    dt_mean     
+  ------ ----------- ---------- ------------
+
+  [dt-only hierarchy] Preserving A_log spectrum, modifying dt_bias only
+  0      acoustic    1.000      0.0041      
+  1      acoustic    1.000      0.0045      
+  2      acoustic    1.000      0.0052      
+  3      acoustic    1.000      0.0060      
+  4      acoustic    1.000      0.0066      
+  5      acoustic    1.000      0.0076      
+  6      acoustic    1.000      0.0082      
+  7      acoustic    1.000      0.0085      
+  8      phonetic    1.000      0.0094      
+  9      phonetic    1.000      0.0101      
+  10     phonetic    1.000      0.0103      
+  11     phonetic    1.000      0.0111      
+  12     phonetic    1.000      0.0120      
+  13     phonetic    1.000      0.0123      
+  14     phonetic    1.000      0.0137      
+  15     phonetic    1.000      0.0142      
+  16     linguistic  1.000      0.0147      
+  17     linguistic  1.000      0.0150      
+  18     linguistic  1.000      0.0158      
+  19     linguistic  1.000      0.0163      
+  20     linguistic  1.000      0.0184      
+  21     linguistic  1.000      0.0184      
+  22     linguistic  1.000      0.0190      
+  23     linguistic  1.000      0.0196      
+
+Model Parameters:
+  Encoder type: MAMBA
+  Total: 8,609,879 (8.61M)
+  Trainable: 8,609,879
+
+Configuration saved to: checkpoints_mamba_dt_bias_hier_100h_W-228_D-24_S-16/config.json
+
+
+[Config] 100h mode: Monitoring 'val_wer_clean' for Early Stopping.
+
+
+TRAINING STARTED
+
+
+--------------------------------------------------------------------------------
+Epoch 1/30
+
+
+  Train Loss:  nan | Val Loss:  nan | Val WER:  0.8768 (87.68%)| Epoch Time:  1m 35s | Total Time:  1m
+  Current LR:        0.000892
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 2/30
+
+
+  Train Loss:  2.1907 | Val Loss:  1.4528 | Val WER:  0.7031 (70.31%)| Epoch Time:  1m 36s | Total Time:  3m
+  Current LR:        0.000998
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 3/30
+
+
+  Train Loss:  1.3148 | Val Loss:  1.0037 | Val WER:  0.6014 (60.14%)| Epoch Time:  1m 35s | Total Time:  4m
+  Current LR:        0.000990
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 4/30
+
+
+  Train Loss:  1.0372 | Val Loss:  0.8566 | Val WER:  0.5551 (55.51%)| Epoch Time:  1m 35s | Total Time:  6m
+  Current LR:        0.000976
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 5/30
+
+
+  Train Loss:  0.9011 | Val Loss:  0.7631 | Val WER:  0.5216 (52.16%)| Epoch Time:  1m 36s | Total Time:  8m
+  Current LR:        0.000956
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 6/30
+
+
+  Train Loss:  0.8149 | Val Loss:  0.6970 | Val WER:  0.4863 (48.63%)| Epoch Time:  1m 35s | Total Time:  9m
+  Current LR:        0.000931
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 7/30
+
+
+  Train Loss:  0.7548 | Val Loss:  0.6699 | Val WER:  0.4577 (45.77%)| Epoch Time:  1m 36s | Total Time:  11m
+  Current LR:        0.000901
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 8/30
+
+
+  Train Loss:  0.7065 | Val Loss:  0.6363 | Val WER:  0.4513 (45.13%)| Epoch Time:  1m 36s | Total Time:  12m
+  Current LR:        0.000866
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 9/30
+
+
+  Train Loss:  0.6669 | Val Loss:  0.6214 | Val WER:  0.4355 (43.55%)| Epoch Time:  1m 36s | Total Time:  14m
+  Current LR:        0.000827
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 10/30
+
+
+  Train Loss:  0.6310 | Val Loss:  0.5961 | Val WER:  0.4130 (41.30%)| Epoch Time:  1m 36s | Total Time:  16m
+  Current LR:        0.000784
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 11/30
+
+
+  Train Loss:  0.5986 | Val Loss:  0.5852 | Val WER:  0.3990 (39.90%)| Epoch Time:  1m 36s | Total Time:  17m
+  Current LR:        0.000738
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 12/30
+
+
+  Train Loss:  0.5720 | Val Loss:  0.5638 | Val WER:  0.3874 (38.74%)| Epoch Time:  1m 36s | Total Time:  19m
+  Current LR:        0.000689
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 13/30
+
+
+  Train Loss:  0.5465 | Val Loss:  0.5288 | Val WER:  0.3730 (37.30%)| Epoch Time:  1m 36s | Total Time:  21m
+  Current LR:        0.000637
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 14/30
+
+
+  Train Loss:  0.5231 | Val Loss:  0.5254 | Val WER:  0.3768 (37.68%)| Epoch Time:  1m 36s | Total Time:  22m
+  Current LR:        0.000584
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 15/30
+
+
+  Train Loss:  0.4992 | Val Loss:  0.5194 | Val WER:  0.3622 (36.22%)| Epoch Time:  1m 36s | Total Time:  24m
+  Current LR:        0.000530
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 16/30
+
+
+  Train Loss:  0.4772 | Val Loss:  0.5235 | Val WER:  0.3499 (34.99%)| Epoch Time:  1m 36s | Total Time:  25m
+  Current LR:        0.000476
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 17/30
+
+
+  Train Loss:  0.4583 | Val Loss:  0.5261 | Val WER:  0.3496 (34.96%)| Epoch Time:  1m 36s | Total Time:  27m
+  Current LR:        0.000422
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 18/30
+
+
+  Train Loss:  0.4378 | Val Loss:  0.5108 | Val WER:  0.3373 (33.73%)| Epoch Time:  1m 36s | Total Time:  29m
+  Current LR:        0.000369
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 19/30
+
+
+  Train Loss:  0.4205 | Val Loss:  0.5118 | Val WER:  0.3294 (32.94%)| Epoch Time:  1m 36s | Total Time:  30m
+  Current LR:        0.000317
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 20/30
+
+
+  Train Loss:  0.4033 | Val Loss:  0.4958 | Val WER:  0.3247 (32.47%)| Epoch Time:  1m 36s | Total Time:  32m
+  Current LR:        0.000268
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 21/30
+
+
+  Train Loss:  0.3850 | Val Loss:  0.4851 | Val WER:  0.3147 (31.47%)| Epoch Time:  1m 36s | Total Time:  34m
+  Current LR:        0.000221
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 22/30
+
+
+  Train Loss:  0.3699 | Val Loss:  0.4959 | Val WER:  0.3143 (31.43%)| Epoch Time:  1m 36s | Total Time:  35m
+  Current LR:        0.000178
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 23/30
+
+
+  Train Loss:  0.3536 | Val Loss:  0.4977 | Val WER:  0.3073 (30.73%)| Epoch Time:  1m 36s | Total Time:  37m
+  Current LR:        0.000138
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 24/30
+
+
+  Train Loss:  0.3422 | Val Loss:  0.4994 | Val WER:  0.3074 (30.74%)| Epoch Time:  1m 35s | Total Time:  38m
+  Current LR:        0.000103
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 25/30
+
+
+  Train Loss:  0.3308 | Val Loss:  0.4870 | Val WER:  0.3011 (30.11%)| Epoch Time:  1m 36s | Total Time:  40m
+  Current LR:        0.000072
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 26/30
+
+
+  Train Loss:  0.3229 | Val Loss:  0.4952 | Val WER:  0.3001 (30.01%)| Epoch Time:  1m 36s | Total Time:  42m
+  Current LR:        0.000047
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 27/30
+
+
+  Train Loss:  0.3154 | Val Loss:  0.4944 | Val WER:  0.2983 (29.83%)| Epoch Time:  1m 36s | Total Time:  43m
+  Current LR:        0.000026
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 28/30
+
+
+  Train Loss:  0.3087 | Val Loss:  0.4937 | Val WER:  0.2978 (29.78%)| Epoch Time:  1m 36s | Total Time:  45m
+  Current LR:        0.000012
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 29/30
+
+
+  Train Loss:  0.3042 | Val Loss:  0.4950 | Val WER:  0.2977 (29.77%)| Epoch Time:  1m 36s | Total Time:  47m
+  Current LR:        0.000003
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Epoch 30/30
+
+
+  Train Loss:  0.3033 | Val Loss:  0.4965 | Val WER:  0.2978 (29.78%)| Epoch Time:  1m 36s | Total Time:  48m
+  Current LR:        0.000000
+  GPU Memory (Peak): 4.67 GB
+--------------------------------------------------------------------------------
+Training Complete.
+Total training time: 0h 48m
+
+FINAL RESULTS
+   Best WER:        29.76%
+   Best checkpoint: /home/roberh18/IKT590_Master_Thesis/checkpoints_mamba_dt_bias_hier_100h_W-228_D-24_S-16/best_epoch=28_val_wer_clean=0.298.ckpt
+   Results saved:   checkpoints_mamba_dt_bias_hier_100h_W-228_D-24_S-16
+
+Evaluating on test sets...
+Loading best model: /home/roberh18/IKT590_Master_Thesis/checkpoints_mamba_dt_bias_hier_100h_W-228_D-24_S-16/best_epoch=28_val_wer_clean=0.298.ckpt
+
+Dataset: TEST-CLEAN
+  Size: 2620 examples
+  Mode: LAZY LOADING (memory efficient)
+  Speed perturbation: DISABLED
+
+Dataset statistics (sampled from 1000 examples):
+  Audio length: min=20560, max=542560, mean=118948
+  Audio duration: min=1.3s, max=33.9s, mean=7.4s
+  Text length: min=5, max=576, mean=107.9
+
+Dataset: TEST-OTHER
+  Size: 2939 examples
+  Mode: LAZY LOADING (memory efficient)
+  Speed perturbation: DISABLED
+
+Dataset statistics (sampled from 1000 examples):
+  Audio length: min=26480, max=527280, mean=101773
+  Audio duration: min=1.7s, max=33.0s, mean=6.4s
+  Text length: min=7, max=453, mean=89.6
+
+WER results for 'test-clean' and 'test-other':
+
+
+================================================================================
+FINAL EVALUATION (trainer.test)
+Checkpoint used: /home/roberh18/IKT590_Master_Thesis/checkpoints_mamba_dt_bias_hier_100h_W-228_D-24_S-16/best_epoch=28_val_wer_clean=0.298.ckpt
+Num dataloaders: 2
+
+[Dataloader 0]
+  test_wer_clean: 0.30037185549736023
+
+[Dataloader 1]
+  test_wer_other: 0.5836499929428101
+
+
+=== FINAL TEST RESULTS (raw dicts) ===
+Dataloader 0: {'test_wer_clean': 0.30037185549736023}
+Dataloader 1: {'test_wer_other': 0.5836499929428101}
+
+Saving layer diagnostics...
+
+Generating visualizations...
+
+Visualizing results: 
+   Log directory: logs/mamba_dt_bias_hier_100h_W-228_D-24_S-16
+   Output directory: checkpoints_mamba_dt_bias_hier_100h_W-228_D-24_S-16/figures
+   Experiment: mamba_dt_bias_hier_100h_W-228_D-24_S-16
+Generating figures...
+Using metrics: logs/mamba_dt_bias_hier_100h_W-228_D-24_S-16/version_0/metrics.csv
+
+ Generated: training_curves.pdf
+ Generated: wer_curves.pdf
+ Generated: ablation_study.pdf
+ Generated: hierarchical_init.pdf
+ Generated: lr_schedule.pdf
+Figures saved to: checkpoints_mamba_dt_bias_hier_100h_W-228_D-24_S-16/figures
+ Generating: parameter_breakdown.pdf
+ Generating: hierarchical_dynamics.pdf (Learned Parameters)
+
+
+ERROR: 'MambaLayer' object has no attribute 'A_log'
+Traceback (most recent call last):
+
+  File "/home/roberh18/IKT590_Master_Thesis/IKT590_Script_ASR_mamba_v2_0.py", line 3036, in main
+    best_wer, best_path = train(config)
+
+  File "/home/roberh18/IKT590_Master_Thesis/IKT590_Script_ASR_mamba_v2_0.py", line 2127, in train
+    visualizer.visualize_hierarchical_dynamics(model) # This is the fixed version
+
+  File "/home/roberh18/IKT590_Master_Thesis/IKT590_Script_ASR_mamba_v2_0.py", line 2584, in visualize_hierarchical_dynamics
+    param1.append(layer.A_log.detach().mean().cpu().item())
+
+  File "/home/roberh18/.local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1964, in __getattr__
+    raise AttributeError(
+
+AttributeError: 'MambaLayer' object has no attribute 'A_log'
+
