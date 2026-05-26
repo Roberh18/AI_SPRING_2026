@@ -1,0 +1,1263 @@
+"
+================================================================================
+PHASE 8: S-SSSM encoder Trials 960h + ngram ( >>> FILE: output_ssssm_enc_960h_ngram_elm_eval_merged.txt <<< )
+================================================================================
+# 8.1 Tune alpha   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode tune --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --beam-width 10 --batch-size 64 --exp-name ngram10_tune_ssssm_960h
+
+# 8.2 Full eval at alpha=32   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 32.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name ngram10_eval_ssssm_960h_a32
+
+# 8.3 Full eval at alpha=16   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 16.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name ngram10_eval_ssssm_960h_a16
+
+# 8.4 Full eval at alpha=8   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 8.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name ngram10_eval_ssssm_960h_a8
+
+# 8.5 RTFX   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode rtfx --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 32.0 --beam-width 10 --batch-size 64 --exp-name ngram10_rtfx_ssssm_960h
+
+# 8.6 Hallucination   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode hallucination --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --batch-size 64 --exp-name ngram10_hallucination_ssssm_960h
+
+# 8.7 Score analysis   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode score_analysis --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 32.0 --beam-width 10 --batch-size 64 --exp-name ngram10_score_analysis_ssssm_960h
+  
+Terminal log below...
+
+"
+
+
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode tune --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --beam-width 10 --batch-size 64 --exp-name ngram10_tune_ssssm_960h
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading sssm checkpoint: checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt
+[LoadASR] Loaded: d_model=320, layers=48, params=35,028,669
+
+[CharNgramLM] 10-gram from lm_checkpoints/ngram/char_10gram.pkl (3181.6 MB)
+Loading dataset from disk: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:00<00:00, 131.01it/s]
+Loading dataset from disk: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:00<00:00, 113.19it/s]
+
+[Tune] Phase 1: Pre-computing N-best lists (beam search)...
+  2703 utterances, 27030 total hypotheses. (447s)
+
+[Tune] Phase 2: Pre-computing LM scores for 27030 hypotheses...
+    Scored 500/2703 utterances...
+    Scored 1000/2703 utterances...
+    Scored 1500/2703 utterances...
+    Scored 2000/2703 utterances...
+    Scored 2500/2703 utterances...
+  LM scoring done. (5s)
+
+[Tune] Score Distribution Analysis (across beam hypotheses per utterance):
+  Score spread (max-min) across beam hypotheses (median over 2703 utterances):
+    CTC score spread:       1.8681  (this is what beam search sees)
+    ELM score/len spread:   0.2881
+    ILM score/len spread:   0.0000
+  Effective signal-to-noise ratio (at alpha=1.0):
+    ELM contribution / CTC spread: 15.42%
+    ILM contribution / CTC spread: 0.00%
+  Re-ranking impact:
+    Utterances where ELM changes top-1: 293/2703 (10.8%)
+    Utterances where ILM changes top-1: 0/2703 (0.0%)
+
+
+[Tune] Phase 3: Grid search (300 combinations)...
+  NEW BEST: a=0.0, b=0.0, g=-0.3, WER=5.92%
+
+  Grid search done. (120s)
+
+[Tune] Top 10 configurations:
+  Rank  alpha   beta  gamma      WER
+  ----------------------------------
+     1   0.00   0.00   -0.3    5.92%
+     2   0.00   0.05   -0.3    5.92%
+     3   0.00   0.10   -0.3    5.92%
+     4   0.00   0.15   -0.3    5.92%
+     5   0.00   0.20   -0.3    5.92%
+     6   0.00   0.30   -0.3    5.92%
+     7   0.10   0.00   -0.3    5.92%
+     8   0.10   0.05   -0.3    5.92%
+     9   0.10   0.10   -0.3    5.92%
+    10   0.10   0.15   -0.3    5.92%
+
+[Tune] BEST: alpha=0.0, beta=0.0, gamma=-0.3, WER=5.92%
+
+Results: ilme_mamba_results_ngram10_tune_ssssm_960h/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 32.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name ngram10_eval_ssssm_960h_a32
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading sssm checkpoint: checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt
+[LoadASR] Loaded: d_model=320, layers=48, params=35,028,669
+
+[CharNgramLM] 10-gram from lm_checkpoints/ngram/char_10gram.pkl (3181.6 MB)
+Loading dataset from disk: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:00<00:00, 29559.04it/s]
+Loading dataset from disk: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:00<00:00, 33820.77it/s]
+
+======================================================================
+  Full Evaluation: test-clean
+======================================================================
+  2620 utterances.
+
+  --- Greedy (baseline) ---
+    WER=6.17% (S=4.6% D=0.4% I=1.2%) P=94.3% R=95.0% F1=94.7%
+  --- Beam W=10 ---
+    WER=6.07% (S=4.5% D=0.4% I=1.2%) P=94.4% R=95.1% F1=94.7%
+  --- Beam+ELM (a=32.0) ---
+    WER=8.86% (S=4.1% D=0.3% I=4.4%) P=91.8% R=95.6% F1=93.7%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                     6.17%  94.3%  95.0%  94.7%
+  Beam W=10                             6.07%  94.4%  95.1%  94.7%
+  Beam+ELM (a=32.0)                     8.86%  91.8%  95.6%  93.7%
+==========================================================================================
+
+======================================================================
+  Full Evaluation: test-other
+======================================================================
+  2939 utterances.
+
+  --- Greedy (baseline) ---
+    WER=16.23% (S=12.7% D=1.4% I=2.1%) P=85.3% R=85.9% F1=85.6%
+  --- Beam W=10 ---
+    WER=16.04% (S=12.5% D=1.4% I=2.2%) P=85.4% R=86.1% F1=85.8%
+  --- Beam+ELM (a=32.0) ---
+    WER=18.51% (S=11.9% D=1.2% I=5.4%) P=83.4% R=86.9% F1=85.1%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                    16.23%  85.3%  85.9%  85.6%
+  Beam W=10                            16.04%  85.4%  86.1%  85.8%
+  Beam+ELM (a=32.0)                    18.51%  83.4%  86.9%  85.1%
+==========================================================================================
+
+Results: ilme_mamba_results_ngram10_eval_ssssm_960h_a32/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode rtfx --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 32.0 --beam-width 10 --batch-size 64 --exp-name ngram10_rtfx_ssssm_960h
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading sssm checkpoint: checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt
+[LoadASR] Loaded: d_model=320, layers=48, params=35,028,669
+
+[CharNgramLM] 10-gram from lm_checkpoints/ngram/char_10gram.pkl (3181.6 MB)
+Loading dataset from disk: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:00<00:00, 124.47it/s]
+Loading dataset from disk: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:05<00:00, 10.87it/s]
+  [RTFX] greedy: RTFX=6.2x (RTF=0.1602), lat_mean=1183.9ms, p95=1641.7ms (2428 utts, 17944s audio in 2875s compute)
+  [RTFX] beam: RTFX=5.5x (RTF=0.1812), lat_mean=1339.3ms, p95=1898.9ms (2428 utts, 17944s audio in 3252s compute)
+  [RTFX] nbest_ilme: RTFX=5.5x (RTF=0.1815), lat_mean=1341.2ms, p95=1903.4ms (2428 utts, 17944s audio in 3257s compute)
+
+Results: ilme_mamba_results_ngram10_rtfx_ssssm_960h/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 16.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name ngram10_eval_ssssm_960h_a16
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading sssm checkpoint: checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt
+[LoadASR] Loaded: d_model=320, layers=48, params=35,028,669
+
+[CharNgramLM] 10-gram from lm_checkpoints/ngram/char_10gram.pkl (3181.6 MB)
+Loading dataset from disk: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:00<00:00, 130.97it/s]
+Loading dataset from disk: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:00<00:00, 118.81it/s]
+
+======================================================================
+  Full Evaluation: test-clean
+======================================================================
+  2620 utterances.
+
+  --- Greedy (baseline) ---
+    WER=6.17% (S=4.6% D=0.4% I=1.2%) P=94.3% R=95.0% F1=94.7%
+  --- Beam W=10 ---
+    WER=6.07% (S=4.5% D=0.4% I=1.2%) P=94.4% R=95.1% F1=94.7%
+  --- Beam+ELM (a=16.0) ---
+    WER=8.34% (S=4.1% D=0.3% I=3.9%) P=92.3% R=95.6% F1=93.9%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                     6.17%  94.3%  95.0%  94.7%
+  Beam W=10                             6.07%  94.4%  95.1%  94.7%
+  Beam+ELM (a=16.0)                     8.34%  92.3%  95.6%  93.9%
+==========================================================================================
+
+======================================================================
+  Full Evaluation: test-other
+======================================================================
+  2939 utterances.
+
+  --- Greedy (baseline) ---
+    WER=16.23% (S=12.7% D=1.4% I=2.1%) P=85.3% R=85.9% F1=85.6%
+  --- Beam W=10 ---
+    WER=16.04% (S=12.5% D=1.4% I=2.2%) P=85.4% R=86.1% F1=85.8%
+  --- Beam+ELM (a=16.0) ---
+    WER=18.11% (S=11.9% D=1.2% I=5.0%) P=83.7% R=86.9% F1=85.3%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                    16.23%  85.3%  85.9%  85.6%
+  Beam W=10                            16.04%  85.4%  86.1%  85.8%
+  Beam+ELM (a=16.0)                    18.11%  83.7%  86.9%  85.3%
+==========================================================================================
+
+Results: ilme_mamba_results_ngram10_eval_ssssm_960h_a16/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 8.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name ngram10_eval_ssssm_960h_a8
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading sssm checkpoint: checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt
+[LoadASR] Loaded: d_model=320, layers=48, params=35,028,669
+
+[CharNgramLM] 10-gram from lm_checkpoints/ngram/char_10gram.pkl (3181.6 MB)
+Loading dataset from disk: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:00<00:00, 31521.31it/s]
+Loading dataset from disk: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:00<00:00, 38391.80it/s]
+
+======================================================================
+  Full Evaluation: test-clean
+======================================================================
+  2620 utterances.
+
+  --- Greedy (baseline) ---
+    WER=6.17% (S=4.6% D=0.4% I=1.2%) P=94.3% R=95.0% F1=94.7%
+  --- Beam W=10 ---
+    WER=6.07% (S=4.5% D=0.4% I=1.2%) P=94.4% R=95.1% F1=94.7%
+  --- Beam+ELM (a=8.0) ---
+    WER=7.50% (S=4.1% D=0.4% I=3.0%) P=93.0% R=95.5% F1=94.3%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                     6.17%  94.3%  95.0%  94.7%
+  Beam W=10                             6.07%  94.4%  95.1%  94.7%
+  Beam+ELM (a=8.0)                      7.50%  93.0%  95.5%  94.3%
+==========================================================================================
+
+======================================================================
+  Full Evaluation: test-other
+======================================================================
+  2939 utterances.
+
+  --- Greedy (baseline) ---
+    WER=16.23% (S=12.7% D=1.4% I=2.1%) P=85.3% R=85.9% F1=85.6%
+  --- Beam W=10 ---
+    WER=16.04% (S=12.5% D=1.4% I=2.2%) P=85.4% R=86.1% F1=85.8%
+  --- Beam+ELM (a=8.0) ---
+    WER=17.49% (S=11.9% D=1.2% I=4.3%) P=84.2% R=86.9% F1=85.5%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                    16.23%  85.3%  85.9%  85.6%
+  Beam W=10                            16.04%  85.4%  86.1%  85.8%
+  Beam+ELM (a=8.0)                     17.49%  84.2%  86.9%  85.5%
+==========================================================================================
+
+Results: ilme_mamba_results_ngram10_eval_ssssm_960h_a8/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode hallucination --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --batch-size 64 --exp-name ngram10_hallucination_ssssm_960h
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading sssm checkpoint: checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt
+[LoadASR] Loaded: d_model=320, layers=48, params=35,028,669
+
+[CharNgramLM] 10-gram from lm_checkpoints/ngram/char_10gram.pkl (3181.6 MB)
+Loading dataset from disk: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:05<00:00,  8.98it/s]
+Loading dataset from disk: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:00<00:00, 95.69it/s]
+
+  [Hallucination] 58546 chars, 500 utterances:
+    confident_correct        :  78.1% (45,742)
+    acoustic_artifact        :  21.3% (12,479)
+    lm_hallucination         :   0.3% (192)
+    noise                    :   0.2% (133)
+
+Results: ilme_mamba_results_ngram10_hallucination_ssssm_960h/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode score_analysis --data-path hub_data/librispeech --dataset-config 100h --asr-checkpoint "checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/ngram/char_10gram.pkl --alpha 32.0 --beam-width 10 --batch-size 64 --exp-name ngram10_score_analysis_ssssm_960h
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading sssm checkpoint: checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt
+[LoadASR] Loaded: d_model=320, layers=48, params=35,028,669
+
+[CharNgramLM] 10-gram from lm_checkpoints/ngram/char_10gram.pkl (3181.6 MB)
+Loading dataset from disk: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:00<00:00, 91.29it/s]
+Loading dataset from disk: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:00<00:00, 97.19it/s]
+
+==========================================================================================
+  SCORE ANALYSIS: Beam Search + Mamba ELM Rescoring
+  ASR Encoder: d_model=?
+  ELM: d_model=0, layers=10, params=0
+  Alpha: 32.0, Beam width: 10
+  Timestamp: 2026-04-20 20:11:06
+==========================================================================================
+^[[B^[[A
+
+==========================================================================================
+  EXAMPLES WHERE ELM RESCORING CHANGED THE TOP HYPOTHESIS
+  (838/2620 utterances re-ranked = 32.0%)
+==========================================================================================
+
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Example 1
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Reference:     from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much unhappiness in england for england to have made her forget france
+  Greedy:        from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget france
+  CTC best:      from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget france
+  ELM rescored:  from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much unhappiness in england for england to have made her forget france
+  *** RESCORING CHANGED THE WINNER ***
+
+  Rank         CTC     ELM/len   α×ELM/len    Combined  Hypothesis
+  ────  ──────────  ──────────  ──────────  ──────────  ────────────────────────────────────────
+     1      -2.955     -0.9859     -31.548     -34.503  "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much unhappiness in england for england to have made her forget france" (CTC #4) ←
+     2      -2.888     -0.9903     -31.691     -34.578  "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much in happiness in england for england to have made her forget france" (CTC #3)
+     3      -1.290     -1.0552     -33.768     -35.057  "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget france" (CTC #1)
+     4      -2.366     -1.0621     -33.988     -36.354  "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared in object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget france" (CTC #2)
+     5      -4.571     -1.1352     -36.328     -40.899  "from the respect paid her on all sides she seemed like a queen and from the adiration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget france"
+     6      -7.655     -1.0665     -34.127     -41.782  "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget franze" (CTC #7)
+     7      -7.224     -1.0863     -34.762     -41.986  "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget frante" (CTC #6)
+     8      -7.843     -1.0682     -34.182     -42.025  "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget francs"
+     9      -7.890     -1.0945     -35.024     -42.914  "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget frande"
+    10      -8.300     -1.0932     -34.982     -43.282  "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared in object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much un happiness in england for england to have made her forget frante"
+
+  Per-character ELM scoring for winner: "from the respect paid her on all sides she seemed like a queen and from the adoration with which she was treated by two or three she appeared an object of worship the queen mother gave the french the most affectionate reception france was her native country and she had suffered too much unhappiness in england for england to have made her forget france"
+  (Each row: what the LM predicted vs what appeared, P = probability the LM assigned)
+   Pos  Char      logP        P         Top-1         Top-2         Top-3  Note
+  ────  ────  ────────  ───────  ────────────  ────────────  ────────────  ────────────────────
+     0     f   -3.1678   0.042       f=0.042       ?=0.000       ?=0.000  ← LM surprised
+     1     r   -3.5185   0.030       r=0.030       ?=0.000       ?=0.000  ← LM surprised
+     2     o   -1.4074   0.245       o=0.245       ?=0.000       ?=0.000  
+     3     m   -1.0153   0.362       m=0.362       ?=0.000       ?=0.000  
+     4   ' '   -0.9193   0.399     ' '=0.399       ?=0.000       ?=0.000  
+     5     t   -1.7883   0.167       t=0.167       ?=0.000       ?=0.000  
+     6     h   -0.9568   0.384       h=0.384       ?=0.000       ?=0.000  
+     7     e   -1.0047   0.366       e=0.366       ?=0.000       ?=0.000  
+     8   ' '   -1.0028   0.367     ' '=0.367       ?=0.000       ?=0.000  
+     9     r   -2.9408   0.053       r=0.053       ?=0.000       ?=0.000  
+    10     e   -1.1697   0.310       e=0.310       ?=0.000       ?=0.000  
+    11     s   -1.2006   0.301       s=0.301       ?=0.000       ?=0.000  
+    12     p   -2.6990   0.067       p=0.067       ?=0.000       ?=0.000  
+    13     e   -0.8063   0.446       e=0.446       ?=0.000       ?=0.000  
+    14     c    0.0000   1.000       c=1.000       ?=0.000       ?=0.000  ← LM confident
+    15     t   -0.0005   0.999       t=0.999       ?=0.000       ?=0.000  ← LM confident
+    16   ' '   -1.0880   0.337     ' '=0.337       ?=0.000       ?=0.000  
+    17     p   -4.7696   0.008       p=0.008       ?=0.000       ?=0.000  ← LM surprised
+    18     a   -1.0473   0.351       a=0.351       ?=0.000       ?=0.000  
+    19     i   -0.2877   0.750       i=0.750       ?=0.000       ?=0.000  
+    20     d   -0.0339   0.967       d=0.967       ?=0.000       ?=0.000  ← LM confident
+    21   ' '    0.0000   1.000     ' '=1.000       ?=0.000       ?=0.000  ← LM confident
+    22     h   -2.0477   0.129       h=0.129       ?=0.000       ?=0.000  
+    23     e   -0.9163   0.400       e=0.400       ?=0.000       ?=0.000  
+    24     r   -0.1892   0.828       r=0.828       ?=0.000       ?=0.000  ← LM confident
+    25   ' '   -0.0973   0.907     ' '=0.907       ?=0.000       ?=0.000  ← LM confident
+    26     o   -3.6507   0.026       o=0.026       ?=0.000       ?=0.000  ← LM surprised
+    27     n   -0.6214   0.537       n=0.537       ?=0.000       ?=0.000  
+    28   ' '   -0.1355   0.873     ' '=0.873       ?=0.000       ?=0.000  ← LM confident
+    29     a   -2.4493   0.086       a=0.086       ?=0.000       ?=0.000  
+    30     l   -2.5004   0.082       l=0.082       ?=0.000       ?=0.000  
+    31     l   -0.2318   0.793       l=0.793       ?=0.000       ?=0.000  
+    32   ' '   -0.0086   0.991     ' '=0.991       ?=0.000       ?=0.000  ← LM confident
+    33     s   -0.9740   0.378       s=0.378       ?=0.000       ?=0.000  
+    34     i   -0.1420   0.868       i=0.868       ?=0.000       ?=0.000  ← LM confident
+    35     d   -0.0103   0.990       d=0.990       ?=0.000       ?=0.000  ← LM confident
+    36     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+    37     s   -0.0056   0.994       s=0.994       ?=0.000       ?=0.000  ← LM confident
+    38   ' '   -0.2625   0.769     ' '=0.769       ?=0.000       ?=0.000  
+    39     s   -3.0187   0.049       s=0.049       ?=0.000       ?=0.000  ← LM surprised
+    40     h   -1.4214   0.241       h=0.241       ?=0.000       ?=0.000  
+    41     e   -0.7859   0.456       e=0.456       ?=0.000       ?=0.000  
+    42   ' '   -0.0637   0.938     ' '=0.938       ?=0.000       ?=0.000  ← LM confident
+    43     s   -2.7112   0.066       s=0.066       ?=0.000       ?=0.000  
+    44     e   -2.4054   0.090       e=0.090       ?=0.000       ?=0.000  
+    45     e   -0.3479   0.706       e=0.706       ?=0.000       ?=0.000  
+    46     m   -0.2025   0.817       m=0.817       ?=0.000       ?=0.000  ← LM confident
+    47     e   -0.1834   0.832       e=0.832       ?=0.000       ?=0.000  ← LM confident
+    48     d   -0.0006   0.999       d=0.999       ?=0.000       ?=0.000  ← LM confident
+    49   ' '   -0.0064   0.994     ' '=0.994       ?=0.000       ?=0.000  ← LM confident
+    50     l   -3.7668   0.023       l=0.023       ?=0.000       ?=0.000  ← LM surprised
+    51     i   -0.3312   0.718       i=0.718       ?=0.000       ?=0.000  
+    52     k   -0.1647   0.848       k=0.848       ?=0.000       ?=0.000  ← LM confident
+    53     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+    54   ' '   -0.2627   0.769     ' '=0.769       ?=0.000       ?=0.000  
+    55     a   -0.8369   0.433       a=0.433       ?=0.000       ?=0.000  
+    56   ' '   -0.1511   0.860     ' '=0.860       ?=0.000       ?=0.000  ← LM confident
+    57     q   -5.2702   0.005       q=0.005       ?=0.000       ?=0.000  ← LM surprised
+    58     u    0.0000   1.000       u=1.000       ?=0.000       ?=0.000  ← LM confident
+    59     e   -0.6013   0.548       e=0.548       ?=0.000       ?=0.000  
+    60     e   -0.1478   0.863       e=0.863       ?=0.000       ?=0.000  ← LM confident
+    61     n   -0.1324   0.876       n=0.876       ?=0.000       ?=0.000  ← LM confident
+    62   ' '   -0.3064   0.736     ' '=0.736       ?=0.000       ?=0.000  
+    63     a   -1.5286   0.217       a=0.217       ?=0.000       ?=0.000  
+    64     n   -0.4480   0.639       n=0.639       ?=0.000       ?=0.000  
+    65     d   -0.2422   0.785       d=0.785       ?=0.000       ?=0.000  
+    66   ' '   -0.0007   0.999     ' '=0.999       ?=0.000       ?=0.000  ← LM confident
+    67     f   -3.8830   0.021       f=0.021       ?=0.000       ?=0.000  ← LM surprised
+    68     r   -1.9027   0.149       r=0.149       ?=0.000       ?=0.000  
+    69     o   -0.8763   0.416       o=0.416       ?=0.000       ?=0.000  
+    70     m   -0.1237   0.884       m=0.884       ?=0.000       ?=0.000  ← LM confident
+    71   ' '   -0.0008   0.999     ' '=0.999       ?=0.000       ?=0.000  ← LM confident
+    72     t   -0.6751   0.509       t=0.509       ?=0.000       ?=0.000  
+    73     h   -0.0489   0.952       h=0.952       ?=0.000       ?=0.000  ← LM confident
+    74     e   -0.1016   0.903       e=0.903       ?=0.000       ?=0.000  ← LM confident
+    75   ' '   -0.0865   0.917     ' '=0.917       ?=0.000       ?=0.000  ← LM confident
+    76     a   -3.5880   0.028       a=0.028       ?=0.000       ?=0.000  ← LM surprised
+    77     d   -2.5450   0.078       d=0.078       ?=0.000       ?=0.000  
+    78     o   -3.4602   0.031       o=0.031       ?=0.000       ?=0.000  ← LM surprised
+    79     r   -1.8458   0.158       r=0.158       ?=0.000       ?=0.000  
+    80     a   -0.7221   0.486       a=0.486       ?=0.000       ?=0.000  
+    81     t   -0.6160   0.540       t=0.540       ?=0.000       ?=0.000  
+    82     i    0.0000   1.000       i=1.000       ?=0.000       ?=0.000  ← LM confident
+    83     o    0.0000   1.000       o=1.000       ?=0.000       ?=0.000  ← LM confident
+    84     n    0.0000   1.000       n=1.000       ?=0.000       ?=0.000  ← LM confident
+    85   ' '   -0.2393   0.787     ' '=0.787       ?=0.000       ?=0.000  
+    86     w   -2.3716   0.093       w=0.093       ?=0.000       ?=0.000  
+    87     i   -1.4473   0.235       i=0.235       ?=0.000       ?=0.000  
+    88     t   -0.3643   0.695       t=0.695       ?=0.000       ?=0.000  
+    89     h   -0.0015   0.998       h=0.998       ?=0.000       ?=0.000  ← LM confident
+    90   ' '   -0.0987   0.906     ' '=0.906       ?=0.000       ?=0.000  ← LM confident
+    91     w   -2.8777   0.056       w=0.056       ?=0.000       ?=0.000  
+    92     h   -0.1396   0.870       h=0.870       ?=0.000       ?=0.000  ← LM confident
+    93     i   -0.6845   0.504       i=0.504       ?=0.000       ?=0.000  
+    94     c   -0.1147   0.892       c=0.892       ?=0.000       ?=0.000  ← LM confident
+    95     h    0.0000   1.000       h=1.000       ?=0.000       ?=0.000  ← LM confident
+    96   ' '   -0.0003   1.000     ' '=1.000       ?=0.000       ?=0.000  ← LM confident
+    97     s   -2.3580   0.095       s=0.095       ?=0.000       ?=0.000  
+    98     h   -0.3873   0.679       h=0.679       ?=0.000       ?=0.000  
+    99     e   -0.2389   0.788       e=0.788       ?=0.000       ?=0.000  
+   100   ' '   -0.0147   0.985     ' '=0.985       ?=0.000       ?=0.000  ← LM confident
+   101     w   -1.8894   0.151       w=0.151       ?=0.000       ?=0.000  
+   102     a   -0.3217   0.725       a=0.725       ?=0.000       ?=0.000  
+   103     s   -0.0393   0.961       s=0.961       ?=0.000       ?=0.000  ← LM confident
+   104   ' '   -0.0167   0.983     ' '=0.983       ?=0.000       ?=0.000  ← LM confident
+   105     t   -2.3314   0.097       t=0.097       ?=0.000       ?=0.000  
+   106     r   -2.7166   0.066       r=0.066       ?=0.000       ?=0.000  
+   107     e   -1.5128   0.220       e=0.220       ?=0.000       ?=0.000  
+   108     a   -0.7087   0.492       a=0.492       ?=0.000       ?=0.000  
+   109     t   -0.3032   0.738       t=0.738       ?=0.000       ?=0.000  
+   110     e   -0.1625   0.850       e=0.850       ?=0.000       ?=0.000  ← LM confident
+   111     d    0.0000   1.000       d=1.000       ?=0.000       ?=0.000  ← LM confident
+   112   ' '   -0.0233   0.977     ' '=0.977       ?=0.000       ?=0.000  ← LM confident
+   113     b   -2.7254   0.066       b=0.066       ?=0.000       ?=0.000  
+   114     y   -0.4518   0.636       y=0.636       ?=0.000       ?=0.000  
+   115   ' '    0.0000   1.000     ' '=1.000       ?=0.000       ?=0.000  ← LM confident
+   116     t   -0.8189   0.441       t=0.441       ?=0.000       ?=0.000  
+   117     w   -5.2122   0.005       w=0.005       ?=0.000       ?=0.000  ← LM surprised
+   118     o   -0.0711   0.931       o=0.931       ?=0.000       ?=0.000  ← LM confident
+   119   ' '   -0.0106   0.989     ' '=0.989       ?=0.000       ?=0.000  ← LM confident
+   120     o   -1.5831   0.205       o=0.205       ?=0.000       ?=0.000  
+   121     r   -1.1527   0.316       r=0.316       ?=0.000       ?=0.000  
+   122   ' '   -0.0310   0.970     ' '=0.970       ?=0.000       ?=0.000  ← LM confident
+   123     t   -0.0882   0.916       t=0.916       ?=0.000       ?=0.000  ← LM confident
+   124     h   -0.0052   0.995       h=0.995       ?=0.000       ?=0.000  ← LM confident
+   125     r   -0.0025   0.997       r=0.997       ?=0.000       ?=0.000  ← LM confident
+   126     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+   127     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+   128   ' '   -0.0120   0.988     ' '=0.988       ?=0.000       ?=0.000  ← LM confident
+   129     s   -2.8301   0.059       s=0.059       ?=0.000       ?=0.000  
+   130     h   -2.2343   0.107       h=0.107       ?=0.000       ?=0.000  
+   131     e   -1.5098   0.221       e=0.221       ?=0.000       ?=0.000  
+   132   ' '   -0.6624   0.516     ' '=0.516       ?=0.000       ?=0.000  
+   133     a   -4.6052   0.010       a=0.010       ?=0.000       ?=0.000  ← LM surprised
+   134     p   -4.1484   0.016       p=0.016       ?=0.000       ?=0.000  ← LM surprised
+   135     p    0.0000   1.000       p=1.000       ?=0.000       ?=0.000  ← LM confident
+   136     e   -0.3874   0.679       e=0.679       ?=0.000       ?=0.000  
+   137     a   -0.0043   0.996       a=0.996       ?=0.000       ?=0.000  ← LM confident
+   138     r   -0.0866   0.917       r=0.917       ?=0.000       ?=0.000  ← LM confident
+   139     e   -0.9780   0.376       e=0.376       ?=0.000       ?=0.000  
+   140     d   -0.0018   0.998       d=0.998       ?=0.000       ?=0.000  ← LM confident
+   141   ' '   -0.0645   0.938     ' '=0.938       ?=0.000       ?=0.000  ← LM confident
+   142     a   -1.6141   0.199       a=0.199       ?=0.000       ?=0.000  
+   143     n   -1.1261   0.324       n=0.324       ?=0.000       ?=0.000  
+   144   ' '   -3.0873   0.046     ' '=0.046       ?=0.000       ?=0.000  ← LM surprised
+   145     o   -1.9353   0.144       o=0.144       ?=0.000       ?=0.000  
+   146     b   -2.2192   0.109       b=0.109       ?=0.000       ?=0.000  
+   147     j   -0.8979   0.407       j=0.407       ?=0.000       ?=0.000  
+   148     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+   149     c    0.0000   1.000       c=1.000       ?=0.000       ?=0.000  ← LM confident
+   150     t   -0.0008   0.999       t=0.999       ?=0.000       ?=0.000  ← LM confident
+   151   ' '   -0.2258   0.798     ' '=0.798       ?=0.000       ?=0.000  
+   152     o   -0.8422   0.431       o=0.431       ?=0.000       ?=0.000  
+   153     f   -0.0790   0.924       f=0.924       ?=0.000       ?=0.000  ← LM confident
+   154   ' '   -0.0014   0.999     ' '=0.999       ?=0.000       ?=0.000  ← LM confident
+   155     w   -3.5042   0.030       w=0.030       ?=0.000       ?=0.000  ← LM surprised
+   156     o   -1.3720   0.254       o=0.254       ?=0.000       ?=0.000  
+   157     r   -0.6781   0.508       r=0.508       ?=0.000       ?=0.000  
+   158     s   -0.4951   0.610       s=0.610       ?=0.000       ?=0.000  
+   159     h   -0.1310   0.877       h=0.877       ?=0.000       ?=0.000  ← LM confident
+   160     i    0.0000   1.000       i=1.000       ?=0.000       ?=0.000  ← LM confident
+   161     p    0.0000   1.000       p=1.000       ?=0.000       ?=0.000  ← LM confident
+   162   ' '   -0.4175   0.659     ' '=0.659       ?=0.000       ?=0.000  
+   163     t   -1.9561   0.141       t=0.141       ?=0.000       ?=0.000  
+   164     h   -0.1869   0.830       h=0.830       ?=0.000       ?=0.000  ← LM confident
+   165     e   -0.3041   0.738       e=0.738       ?=0.000       ?=0.000  
+   166   ' '   -0.4008   0.670     ' '=0.670       ?=0.000       ?=0.000  
+   167     q   -6.5702   0.001       q=0.001       ?=0.000       ?=0.000  ← LM surprised
+   168     u    0.0000   1.000       u=1.000       ?=0.000       ?=0.000  ← LM confident
+   169     e   -0.2231   0.800       e=0.800       ?=0.000       ?=0.000  
+   170     e   -1.6306   0.196       e=0.196       ?=0.000       ?=0.000  
+   171     n   -0.0994   0.905       n=0.905       ?=0.000       ?=0.000  ← LM confident
+   172   ' '   -0.3195   0.727     ' '=0.727       ?=0.000       ?=0.000  
+   173     m   -3.2139   0.040       m=0.040       ?=0.000       ?=0.000  ← LM surprised
+   174     o   -0.7523   0.471       o=0.471       ?=0.000       ?=0.000  
+   175     t   -0.2540   0.776       t=0.776       ?=0.000       ?=0.000  
+   176     h   -0.0121   0.988       h=0.988       ?=0.000       ?=0.000  ← LM confident
+   177     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+   178     r    0.0000   1.000       r=1.000       ?=0.000       ?=0.000  ← LM confident
+   179   ' '   -0.2649   0.767     ' '=0.767       ?=0.000       ?=0.000  
+   180     g   -3.7489   0.024       g=0.024       ?=0.000       ?=0.000  ← LM surprised
+   181     a   -1.6019   0.202       a=0.202       ?=0.000       ?=0.000  
+   182     v   -0.2951   0.744       v=0.744       ?=0.000       ?=0.000  
+   183     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+   184   ' '   -0.0054   0.995     ' '=0.995       ?=0.000       ?=0.000  ← LM confident
+   185     t   -2.1120   0.121       t=0.121       ?=0.000       ?=0.000  
+   186     h   -0.2132   0.808       h=0.808       ?=0.000       ?=0.000  ← LM confident
+   187     e   -0.0652   0.937       e=0.937       ?=0.000       ?=0.000  ← LM confident
+   188   ' '   -0.4229   0.655     ' '=0.655       ?=0.000       ?=0.000  
+   189     f   -3.0245   0.049       f=0.049       ?=0.000       ?=0.000  ← LM surprised
+   190     r   -2.4773   0.084       r=0.084       ?=0.000       ?=0.000  
+   191     e   -0.7485   0.473       e=0.473       ?=0.000       ?=0.000  
+   192     n   -0.5985   0.550       n=0.550       ?=0.000       ?=0.000  
+   193     c   -0.0208   0.979       c=0.979       ?=0.000       ?=0.000  ← LM confident
+   194     h    0.0000   1.000       h=1.000       ?=0.000       ?=0.000  ← LM confident
+   195   ' '   -0.1700   0.844     ' '=0.844       ?=0.000       ?=0.000  ← LM confident
+   196     t   -2.7724   0.063       t=0.063       ?=0.000       ?=0.000  
+   197     h   -1.1453   0.318       h=0.318       ?=0.000       ?=0.000  
+   198     e   -0.6394   0.528       e=0.528       ?=0.000       ?=0.000  
+   199   ' '   -0.5346   0.586     ' '=0.586       ?=0.000       ?=0.000  
+   200     m   -3.2658   0.038       m=0.038       ?=0.000       ?=0.000  ← LM surprised
+   201     o   -1.7636   0.171       o=0.171       ?=0.000       ?=0.000  
+   202     s   -1.5120   0.220       s=0.220       ?=0.000       ?=0.000  
+   203     t   -0.0335   0.967       t=0.967       ?=0.000       ?=0.000  ← LM confident
+   204   ' '   -0.0038   0.996     ' '=0.996       ?=0.000       ?=0.000  ← LM confident
+   205     a   -2.6616   0.070       a=0.070       ?=0.000       ?=0.000  
+   206     f   -3.2278   0.040       f=0.040       ?=0.000       ?=0.000  ← LM surprised
+   207     f   -0.0902   0.914       f=0.914       ?=0.000       ?=0.000  ← LM confident
+   208     e   -0.1396   0.870       e=0.870       ?=0.000       ?=0.000  ← LM confident
+   209     c    0.0000   1.000       c=1.000       ?=0.000       ?=0.000  ← LM confident
+   210     t   -0.0021   0.998       t=0.998       ?=0.000       ?=0.000  ← LM confident
+   211     i   -0.1974   0.821       i=0.821       ?=0.000       ?=0.000  ← LM confident
+   212     o   -0.1242   0.883       o=0.883       ?=0.000       ?=0.000  ← LM confident
+   213     n    0.0000   1.000       n=1.000       ?=0.000       ?=0.000  ← LM confident
+   214     a   -1.2015   0.301       a=0.301       ?=0.000       ?=0.000  
+   215     t   -0.0036   0.996       t=0.996       ?=0.000       ?=0.000  ← LM confident
+   216     e   -0.0004   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+   217   ' '   -0.4204   0.657     ' '=0.657       ?=0.000       ?=0.000  
+   218     r   -2.9926   0.050       r=0.050       ?=0.000       ?=0.000  
+   219     e   -0.1054   0.900       e=0.900       ?=0.000       ?=0.000  ← LM confident
+   220     c   -2.7496   0.064       c=0.064       ?=0.000       ?=0.000  
+   221     e   -1.7047   0.182       e=0.182       ?=0.000       ?=0.000  
+   222     p   -0.2877   0.750       p=0.750       ?=0.000       ?=0.000  
+   223     t    0.0000   1.000       t=1.000       ?=0.000       ?=0.000  ← LM confident
+   224     i   -0.2877   0.750       i=0.750       ?=0.000       ?=0.000  
+   225     o   -0.0439   0.957       o=0.957       ?=0.000       ?=0.000  ← LM confident
+   226     n    0.0000   1.000       n=1.000       ?=0.000       ?=0.000  ← LM confident
+   227   ' '   -0.2359   0.790     ' '=0.790       ?=0.000       ?=0.000  
+   228     f   -3.4451   0.032       f=0.032       ?=0.000       ?=0.000  ← LM surprised
+   229     r   -1.0565   0.348       r=0.348       ?=0.000       ?=0.000  
+   230     a   -3.8816   0.021       a=0.021       ?=0.000       ?=0.000  ← LM surprised
+   231     n   -0.4055   0.667       n=0.667       ?=0.000       ?=0.000  
+   232     c   -0.9750   0.377       c=0.377       ?=0.000       ?=0.000  
+   233     e   -1.9015   0.149       e=0.149       ?=0.000       ?=0.000  
+   234   ' '   -0.5071   0.602     ' '=0.602       ?=0.000       ?=0.000  
+   235     w   -2.1945   0.111       w=0.111       ?=0.000       ?=0.000  
+   236     a   -1.3827   0.251       a=0.251       ?=0.000       ?=0.000  
+   237     s   -0.0443   0.957       s=0.957       ?=0.000       ?=0.000  ← LM confident
+   238   ' '   -0.0019   0.998     ' '=0.998       ?=0.000       ?=0.000  ← LM confident
+   239     h   -3.6889   0.025       h=0.025       ?=0.000       ?=0.000  ← LM surprised
+   240     e   -0.7034   0.495       e=0.495       ?=0.000       ?=0.000  
+   241     r   -2.3451   0.096       r=0.096       ?=0.000       ?=0.000  
+   242   ' '   -0.7525   0.471     ' '=0.471       ?=0.000       ?=0.000  
+   243     n   -3.2046   0.041       n=0.041       ?=0.000       ?=0.000  ← LM surprised
+   244     a   -0.3324   0.717       a=0.717       ?=0.000       ?=0.000  
+   245     t   -1.1820   0.307       t=0.307       ?=0.000       ?=0.000  
+   246     i   -1.2443   0.288       i=0.288       ?=0.000       ?=0.000  
+   247     v   -0.1754   0.839       v=0.839       ?=0.000       ?=0.000  ← LM confident
+   248     e   -0.0203   0.980       e=0.980       ?=0.000       ?=0.000  ← LM confident
+   249   ' '   -0.1259   0.882     ' '=0.882       ?=0.000       ?=0.000  ← LM confident
+   250     c   -1.8599   0.156       c=0.156       ?=0.000       ?=0.000  
+   251     o   -0.7388   0.478       o=0.478       ?=0.000       ?=0.000  
+   252     u   -0.3430   0.710       u=0.710       ?=0.000       ?=0.000  
+   253     n   -0.1391   0.870       n=0.870       ?=0.000       ?=0.000  ← LM confident
+   254     t   -0.1623   0.850       t=0.850       ?=0.000       ?=0.000  ← LM confident
+   255     r   -0.3307   0.718       r=0.718       ?=0.000       ?=0.000  
+   256     y   -0.0987   0.906       y=0.906       ?=0.000       ?=0.000  ← LM confident
+   257   ' '   -0.2147   0.807     ' '=0.807       ?=0.000       ?=0.000  ← LM confident
+   258     a   -1.7411   0.175       a=0.175       ?=0.000       ?=0.000  
+   259     n   -0.4908   0.612       n=0.612       ?=0.000       ?=0.000  
+   260     d   -0.0294   0.971       d=0.971       ?=0.000       ?=0.000  ← LM confident
+   261   ' '   -0.0004   1.000     ' '=1.000       ?=0.000       ?=0.000  ← LM confident
+   262     s   -2.7502   0.064       s=0.064       ?=0.000       ?=0.000  
+   263     h   -2.1842   0.113       h=0.113       ?=0.000       ?=0.000  
+   264     e   -0.6403   0.527       e=0.527       ?=0.000       ?=0.000  
+   265   ' '   -0.0645   0.938     ' '=0.938       ?=0.000       ?=0.000  ← LM confident
+   266     h   -2.2221   0.108       h=0.108       ?=0.000       ?=0.000  
+   267     a   -0.2320   0.793       a=0.793       ?=0.000       ?=0.000  
+   268     d   -0.2645   0.768       d=0.768       ?=0.000       ?=0.000  
+   269   ' '   -0.0149   0.985     ' '=0.985       ?=0.000       ?=0.000  ← LM confident
+   270     s   -2.2798   0.102       s=0.102       ?=0.000       ?=0.000  
+   271     u   -2.2283   0.108       u=0.108       ?=0.000       ?=0.000  
+   272     f   -1.3917   0.249       f=0.249       ?=0.000       ?=0.000  
+   273     f    0.0000   1.000       f=1.000       ?=0.000       ?=0.000  ← LM confident
+   274     e   -0.2667   0.766       e=0.766       ?=0.000       ?=0.000  
+   275     r    0.0000   1.000       r=1.000       ?=0.000       ?=0.000  ← LM confident
+   276     e   -0.0092   0.991       e=0.991       ?=0.000       ?=0.000  ← LM confident
+   277     d   -0.0335   0.967       d=0.967       ?=0.000       ?=0.000  ← LM confident
+   278   ' '   -0.0621   0.940     ' '=0.940       ?=0.000       ?=0.000  ← LM confident
+   279     t   -1.7122   0.180       t=0.180       ?=0.000       ?=0.000  
+   280     o   -0.7221   0.486       o=0.486       ?=0.000       ?=0.000  
+   281     o   -4.0650   0.017       o=0.017       ?=0.000       ?=0.000  ← LM surprised
+   282   ' '   -0.2400   0.787     ' '=0.787       ?=0.000       ?=0.000  
+   283     m   -2.0885   0.124       m=0.124       ?=0.000       ?=0.000  
+   284     u   -0.2542   0.776       u=0.776       ?=0.000       ?=0.000  
+   285     c    0.0000   1.000       c=1.000       ?=0.000       ?=0.000  ← LM confident
+   286     h    0.0000   1.000       h=1.000       ?=0.000       ?=0.000  ← LM confident
+   287   ' '   -0.1065   0.899     ' '=0.899       ?=0.000       ?=0.000  ← LM confident
+   288     u   -4.2705   0.014       u=0.014       ?=0.000       ?=0.000  ← LM surprised
+   289     n   -1.2585   0.284       n=0.284       ?=0.000       ?=0.000  
+   290     h   -3.3673   0.034       h=0.034       ?=0.000       ?=0.000  ← LM surprised
+   291     a   -0.0910   0.913       a=0.913       ?=0.000       ?=0.000  ← LM confident
+   292     p   -0.0488   0.952       p=0.952       ?=0.000       ?=0.000  ← LM confident
+   293     p    0.0000   1.000       p=1.000       ?=0.000       ?=0.000  ← LM confident
+   294     i   -0.2826   0.754       i=0.754       ?=0.000       ?=0.000  
+   295     n   -0.7458   0.474       n=0.474       ?=0.000       ?=0.000  
+   296     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+   297     s   -0.0012   0.999       s=0.999       ?=0.000       ?=0.000  ← LM confident
+   298     s    0.0000   1.000       s=1.000       ?=0.000       ?=0.000  ← LM confident
+   299   ' '   -0.2155   0.806     ' '=0.806       ?=0.000       ?=0.000  ← LM confident
+   300     i   -2.0783   0.125       i=0.125       ?=0.000       ?=0.000  
+   301     n   -0.7625   0.466       n=0.466       ?=0.000       ?=0.000  
+   302   ' '   -0.1345   0.874     ' '=0.874       ?=0.000       ?=0.000  ← LM confident
+   303     e   -3.8243   0.022       e=0.022       ?=0.000       ?=0.000  ← LM surprised
+   304     n   -2.1768   0.113       n=0.113       ?=0.000       ?=0.000  
+   305     g   -0.3365   0.714       g=0.714       ?=0.000       ?=0.000  
+   306     l    0.0000   1.000       l=1.000       ?=0.000       ?=0.000  ← LM confident
+   307     a   -0.1765   0.838       a=0.838       ?=0.000       ?=0.000  ← LM confident
+   308     n    0.0000   1.000       n=1.000       ?=0.000       ?=0.000  ← LM confident
+   309     d   -0.0003   1.000       d=1.000       ?=0.000       ?=0.000  ← LM confident
+   310   ' '   -0.2485   0.780     ' '=0.780       ?=0.000       ?=0.000  
+   311     f   -3.0679   0.047       f=0.047       ?=0.000       ?=0.000  ← LM surprised
+   312     o   -0.6493   0.522       o=0.522       ?=0.000       ?=0.000  
+   313     r   -0.0780   0.925       r=0.925       ?=0.000       ?=0.000  ← LM confident
+   314   ' '   -0.0532   0.948     ' '=0.948       ?=0.000       ?=0.000  ← LM confident
+   315     e   -3.1531   0.043       e=0.043       ?=0.000       ?=0.000  ← LM surprised
+   316     n   -3.2786   0.038       n=0.038       ?=0.000       ?=0.000  ← LM surprised
+   317     g   -0.7329   0.481       g=0.481       ?=0.000       ?=0.000  
+   318     l   -0.0242   0.976       l=0.976       ?=0.000       ?=0.000  ← LM confident
+   319     a   -0.2123   0.809       a=0.809       ?=0.000       ?=0.000  ← LM confident
+   320     n    0.0000   1.000       n=1.000       ?=0.000       ?=0.000  ← LM confident
+   321     d    0.0000   1.000       d=1.000       ?=0.000       ?=0.000  ← LM confident
+   322   ' '   -0.3414   0.711     ' '=0.711       ?=0.000       ?=0.000  
+   323     t   -2.1312   0.119       t=0.119       ?=0.000       ?=0.000  
+   324     o   -1.0614   0.346       o=0.346       ?=0.000       ?=0.000  
+   325   ' '   -0.1868   0.830     ' '=0.830       ?=0.000       ?=0.000  ← LM confident
+   326     h   -2.9483   0.052       h=0.052       ?=0.000       ?=0.000  
+   327     a   -1.3200   0.267       a=0.267       ?=0.000       ?=0.000  
+   328     v   -0.5461   0.579       v=0.579       ?=0.000       ?=0.000  
+   329     e   -0.0067   0.993       e=0.993       ?=0.000       ?=0.000  ← LM confident
+   330   ' '   -0.0052   0.995     ' '=0.995       ?=0.000       ?=0.000  ← LM confident
+   331     m   -3.1242   0.044       m=0.044       ?=0.000       ?=0.000  ← LM surprised
+   332     a   -1.1981   0.302       a=0.302       ?=0.000       ?=0.000  
+   333     d   -0.3638   0.695       d=0.695       ?=0.000       ?=0.000  
+   334     e   -0.0034   0.997       e=0.997       ?=0.000       ?=0.000  ← LM confident
+   335   ' '   -0.0215   0.979     ' '=0.979       ?=0.000       ?=0.000  ← LM confident
+   336     h   -2.3315   0.097       h=0.097       ?=0.000       ?=0.000  
+   337     e   -1.2163   0.296       e=0.296       ?=0.000       ?=0.000  
+   338     r   -0.0735   0.929       r=0.929       ?=0.000       ?=0.000  ← LM confident
+   339   ' '   -0.0715   0.931     ' '=0.931       ?=0.000       ?=0.000  ← LM confident
+   340     f   -2.3975   0.091       f=0.091       ?=0.000       ?=0.000  
+   341     o   -1.9847   0.137       o=0.137       ?=0.000       ?=0.000  
+   342     r   -0.1469   0.863       r=0.863       ?=0.000       ?=0.000  ← LM confident
+   343     g   -2.4623   0.085       g=0.085       ?=0.000       ?=0.000  
+   344     e   -0.6411   0.527       e=0.527       ?=0.000       ?=0.000  
+   345     t   -0.0449   0.956       t=0.956       ?=0.000       ?=0.000  ← LM confident
+   346   ' '   -0.2823   0.754     ' '=0.754       ?=0.000       ?=0.000  
+   347     f   -5.0067   0.007       f=0.007       ?=0.000       ?=0.000  ← LM surprised
+   348     r   -2.4277   0.088       r=0.088       ?=0.000       ?=0.000  
+   349     a   -1.2809   0.278       a=0.278       ?=0.000       ?=0.000  
+   350     n   -0.6931   0.500       n=0.500       ?=0.000       ?=0.000  
+   351     c   -1.0986   0.333       c=0.333       ?=0.000       ?=0.000  
+   352     e   -1.3863   0.250       e=0.250       ?=0.000       ?=0.000  
+
+  Score breakdown:
+    ELM total log-prob:  -348.0133  (sum of per-char log-probs)
+    Hypothesis length:   353 characters
+    ELM / length:        -0.9859
+    α × ELM/length:      -31.548  (alpha=32.0)
+    CTC score:           -2.955
+    ─────────────────────────────
+    Combined:            -34.503  = -2.955 + -31.548
+
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Example 2
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Reference:     it is you who are mistaken raoul i have read his distress in his eyes in his every gesture and action the whole day
+  Greedy:        it is you who are mistaken raoule i have read his distress in his eyes in his every gesture and action the whole day 
+  CTC best:      it is you who are mistaken raole i have read his distress in his eyes in his every gesture and action the whole day 
+  ELM rescored:  it is you who are mistaken raoul i have read his distress in his eyes in his every gesture and action the whole day 
+  *** RESCORING CHANGED THE WINNER ***
+
+  Rank         CTC     ELM/len   α×ELM/len    Combined  Hypothesis
+  ────  ──────────  ──────────  ──────────  ──────────  ────────────────────────────────────────
+     1      -4.045     -1.2323     -39.433     -43.477  "it is you who are mistaken raoul i have read his distress in his eyes in his every gesture and action the whole day " (CTC #3) ←
+     2      -5.043     -1.2404     -39.691     -44.735  "it is you who are mistaken raoul i have read his distress in his eyes in his every gesture and action the whole day i" (CTC #9)
+     3      -4.047     -1.4838     -47.483     -51.530  "it is you who are mistaken raoule i have read his distress in his eyes in his every gesture and action the whole day " (CTC #4)
+     4      -3.893     -1.4964     -47.886     -51.779  "it is you who are mistaken raole i have read his distress in his eyes in his every gesture and action the whole day " (CTC #1)
+     5      -5.046     -1.4897     -47.671     -52.717  "it is you who are mistaken raoule i have read his distress in his eyes in his every gesture and action the whole day i" (CTC #10)
+     6      -3.903     -1.5330     -49.055     -52.958  "it is you who are mistaken raol i have read his distress in his eyes in his every gesture and action the whole day " (CTC #2)
+     7      -4.892     -1.5023     -48.073     -52.965  "it is you who are mistaken raole i have read his distress in his eyes in his every gesture and action the whole day i" (CTC #5)
+     8      -4.963     -1.5255     -48.816     -53.780  "it is you who are mistaken raole i have read his distress in his eyes in his every gesture and action the whole day e" (CTC #7)
+     9      -4.902     -1.5385     -49.233     -54.135  "it is you who are mistaken raol i have read his distress in his eyes in his every gesture and action the whole day i" (CTC #6)
+    10      -4.973     -1.5620     -49.983     -54.956  "it is you who are mistaken raol i have read his distress in his eyes in his every gesture and action the whole day e" (CTC #8)
+
+  Per-character ELM scoring for winner: "it is you who are mistaken raoul i have read his distress in his eyes in his every gesture and action the whole day "
+  (Each row: what the LM predicted vs what appeared, P = probability the LM assigned)
+   Pos  Char      logP        P         Top-1         Top-2         Top-3  Note
+  ────  ────  ────────  ───────  ────────────  ────────────  ────────────  ────────────────────
+     0     i   -3.8364   0.022       i=0.022       ?=0.000       ?=0.000  ← LM surprised
+     1     t   -3.0146   0.049       t=0.049       ?=0.000       ?=0.000  ← LM surprised
+     2   ' '   -2.2233   0.108     ' '=0.108       ?=0.000       ?=0.000  
+     3     i   -2.8452   0.058       i=0.058       ?=0.000       ?=0.000  
+     4     s   -1.2485   0.287       s=0.287       ?=0.000       ?=0.000  
+     5   ' '   -0.9627   0.382     ' '=0.382       ?=0.000       ?=0.000  
+     6     y   -5.2690   0.005       y=0.005       ?=0.000       ?=0.000  ← LM surprised
+     7     o   -1.0148   0.362       o=0.362       ?=0.000       ?=0.000  
+     8     u   -0.9184   0.399       u=0.399       ?=0.000       ?=0.000  
+     9   ' '   -0.8223   0.439     ' '=0.439       ?=0.000       ?=0.000  
+    10     w   -1.2559   0.285       w=0.285       ?=0.000       ?=0.000  
+    11     h   -0.4305   0.650       h=0.650       ?=0.000       ?=0.000  
+    12     o   -0.0185   0.982       o=0.982       ?=0.000       ?=0.000  ← LM confident
+    13   ' '   -0.0746   0.928     ' '=0.928       ?=0.000       ?=0.000  ← LM confident
+    14     a   -1.5739   0.207       a=0.207       ?=0.000       ?=0.000  
+    15     r   -0.1257   0.882       r=0.882       ?=0.000       ?=0.000  ← LM confident
+    16     e   -0.1262   0.881       e=0.881       ?=0.000       ?=0.000  ← LM confident
+    17   ' '   -0.0038   0.996     ' '=0.996       ?=0.000       ?=0.000  ← LM confident
+    18     m   -3.3097   0.037       m=0.037       ?=0.000       ?=0.000  ← LM surprised
+    19     i   -2.7191   0.066       i=0.066       ?=0.000       ?=0.000  
+    20     s   -0.9163   0.400       s=0.400       ?=0.000       ?=0.000  
+    21     t   -0.9985   0.368       t=0.368       ?=0.000       ?=0.000  
+    22     a   -0.3605   0.697       a=0.697       ?=0.000       ?=0.000  
+    23     k    0.0000   1.000       k=1.000       ?=0.000       ?=0.000  ← LM confident
+    24     e   -0.0162   0.984       e=0.984       ?=0.000       ?=0.000  ← LM confident
+    25     n   -0.7898   0.454       n=0.454       ?=0.000       ?=0.000  
+    26   ' '   -0.3054   0.737     ' '=0.737       ?=0.000       ?=0.000  
+    27     r   -4.9403   0.007       r=0.007       ?=0.000       ?=0.000  ← LM surprised
+    28     a   -2.3354   0.097       a=0.097       ?=0.000       ?=0.000  
+    29     o   -9.2057   0.000       o=0.000       ?=0.000       ?=0.000  ← LM surprised
+    30     u   -2.7489   0.064       u=0.064       ?=0.000       ?=0.000  
+    31     l   -1.8326   0.160       l=0.160       ?=0.000       ?=0.000  
+    32   ' '   -0.9607   0.383     ' '=0.383       ?=0.000       ?=0.000  
+    33     i   -2.3979   0.091       i=0.091       ?=0.000       ?=0.000  
+    34   ' '   -2.5903   0.075     ' '=0.075       ?=0.000       ?=0.000  
+    35     h   -1.7918   0.167       h=0.167       ?=0.000       ?=0.000  
+    36     a    0.0000   1.000       a=1.000       ?=0.000       ?=0.000  ← LM confident
+    37     v    0.0000   1.000       v=1.000       ?=0.000       ?=0.000  ← LM confident
+    38     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+    39   ' '   -0.0458   0.955     ' '=0.955       ?=0.000       ?=0.000  ← LM confident
+    40     r   -3.8512   0.021       r=0.021       ?=0.000       ?=0.000  ← LM surprised
+    41     e   -0.1322   0.876       e=0.876       ?=0.000       ?=0.000  ← LM confident
+    42     a   -0.9827   0.374       a=0.374       ?=0.000       ?=0.000  
+    43     d   -0.9948   0.370       d=0.370       ?=0.000       ?=0.000  
+    44   ' '   -0.0942   0.910     ' '=0.910       ?=0.000       ?=0.000  ← LM confident
+    45     h   -2.8835   0.056       h=0.056       ?=0.000       ?=0.000  
+    46     i   -0.5281   0.590       i=0.590       ?=0.000       ?=0.000  
+    47     s   -0.1517   0.859       s=0.859       ?=0.000       ?=0.000  ← LM confident
+    48   ' '   -0.0453   0.956     ' '=0.956       ?=0.000       ?=0.000  ← LM confident
+    49     d   -3.8918   0.020       d=0.020       ?=0.000       ?=0.000  ← LM surprised
+    50     i   -1.1838   0.306       i=0.306       ?=0.000       ?=0.000  
+    51     s   -1.0629   0.345       s=0.345       ?=0.000       ?=0.000  
+    52     t   -2.0682   0.126       t=0.126       ?=0.000       ?=0.000  
+    53     r   -0.7718   0.462       r=0.462       ?=0.000       ?=0.000  
+    54     e   -0.8656   0.421       e=0.421       ?=0.000       ?=0.000  
+    55     s    0.0000   1.000       s=1.000       ?=0.000       ?=0.000  ← LM confident
+    56     s    0.0000   1.000       s=1.000       ?=0.000       ?=0.000  ← LM confident
+    57   ' '   -0.7500   0.472     ' '=0.472       ?=0.000       ?=0.000  
+    58     i   -2.5860   0.075       i=0.075       ?=0.000       ?=0.000  
+    59     n   -0.7218   0.486       n=0.486       ?=0.000       ?=0.000  
+    60   ' '   -0.2024   0.817     ' '=0.817       ?=0.000       ?=0.000  ← LM confident
+    61     h   -1.9685   0.140       h=0.140       ?=0.000       ?=0.000  
+    62     i   -0.8779   0.416       i=0.416       ?=0.000       ?=0.000  
+    63     s   -0.0917   0.912       s=0.912       ?=0.000       ?=0.000  ← LM confident
+    64   ' '   -0.0054   0.995     ' '=0.995       ?=0.000       ?=0.000  ← LM confident
+    65     e   -2.5265   0.080       e=0.080       ?=0.000       ?=0.000  
+    66     y   -0.7650   0.465       y=0.465       ?=0.000       ?=0.000  
+    67     e   -0.0008   0.999       e=0.999       ?=0.000       ?=0.000  ← LM confident
+    68     s   -0.2139   0.807       s=0.807       ?=0.000       ?=0.000  ← LM confident
+    69   ' '   -0.1638   0.849     ' '=0.849       ?=0.000       ?=0.000  ← LM confident
+    70     i   -3.4657   0.031       i=0.031       ?=0.000       ?=0.000  ← LM surprised
+    71     n   -0.3707   0.690       n=0.690       ?=0.000       ?=0.000  
+    72   ' '   -0.2687   0.764     ' '=0.764       ?=0.000       ?=0.000  
+    73     h   -2.5620   0.077       h=0.077       ?=0.000       ?=0.000  
+    74     i   -0.5789   0.561       i=0.561       ?=0.000       ?=0.000  
+    75     s   -0.0208   0.979       s=0.979       ?=0.000       ?=0.000  ← LM confident
+    76   ' '   -0.0192   0.981     ' '=0.981       ?=0.000       ?=0.000  ← LM confident
+    77     e   -2.5265   0.080       e=0.080       ?=0.000       ?=0.000  
+    78     v   -4.1658   0.016       v=0.016       ?=0.000       ?=0.000  ← LM surprised
+    79     e   -0.3671   0.693       e=0.693       ?=0.000       ?=0.000  
+    80     r   -0.5341   0.586       r=0.586       ?=0.000       ?=0.000  
+    81     y   -0.4270   0.652       y=0.652       ?=0.000       ?=0.000  
+    82   ' '   -0.1772   0.838     ' '=0.838       ?=0.000       ?=0.000  ← LM confident
+    83     g   -4.3676   0.013       g=0.013       ?=0.000       ?=0.000  ← LM surprised
+    84     e   -1.5136   0.220       e=0.220       ?=0.000       ?=0.000  
+    85     s   -1.3788   0.252       s=0.252       ?=0.000       ?=0.000  
+    86     t    0.0000   1.000       t=1.000       ?=0.000       ?=0.000  ← LM confident
+    87     u    0.0000   1.000       u=1.000       ?=0.000       ?=0.000  ← LM confident
+    88     r    0.0000   1.000       r=1.000       ?=0.000       ?=0.000  ← LM confident
+    89     e   -0.0037   0.996       e=0.996       ?=0.000       ?=0.000  ← LM confident
+    90   ' '   -0.5439   0.580     ' '=0.580       ?=0.000       ?=0.000  
+    91     a   -1.8765   0.153       a=0.153       ?=0.000       ?=0.000  
+    92     n   -0.5099   0.601       n=0.601       ?=0.000       ?=0.000  
+    93     d   -0.0369   0.964       d=0.964       ?=0.000       ?=0.000  ← LM confident
+    94   ' '   -0.0010   0.999     ' '=0.999       ?=0.000       ?=0.000  ← LM confident
+    95     a   -2.2612   0.104       a=0.104       ?=0.000       ?=0.000  
+    96     c   -3.3810   0.034       c=0.034       ?=0.000       ?=0.000  ← LM surprised
+    97     t   -1.2552   0.285       t=0.285       ?=0.000       ?=0.000  
+    98     i   -0.4714   0.624       i=0.624       ?=0.000       ?=0.000  
+    99     o   -0.8725   0.418       o=0.418       ?=0.000       ?=0.000  
+   100     n    0.0000   1.000       n=1.000       ?=0.000       ?=0.000  ← LM confident
+   101   ' '   -0.7252   0.484     ' '=0.484       ?=0.000       ?=0.000  
+   102     t   -2.2934   0.101       t=0.101       ?=0.000       ?=0.000  
+   103     h   -0.5086   0.601       h=0.601       ?=0.000       ?=0.000  
+   104     e   -0.7687   0.464       e=0.464       ?=0.000       ?=0.000  
+   105   ' '   -0.4348   0.647     ' '=0.647       ?=0.000       ?=0.000  
+   106     w   -3.0734   0.046       w=0.046       ?=0.000       ?=0.000  ← LM surprised
+   107     h   -1.5419   0.214       h=0.214       ?=0.000       ?=0.000  
+   108     o   -0.4047   0.667       o=0.667       ?=0.000       ?=0.000  
+   109     l   -0.0021   0.998       l=0.998       ?=0.000       ?=0.000  ← LM confident
+   110     e   -0.0009   0.999       e=0.999       ?=0.000       ?=0.000  ← LM confident
+   111   ' '   -0.0223   0.978     ' '=0.978       ?=0.000       ?=0.000  ← LM confident
+   112     d   -3.5949   0.027       d=0.027       ?=0.000       ?=0.000  ← LM surprised
+   113     a   -0.7387   0.478       a=0.478       ?=0.000       ?=0.000  
+   114     y   -0.0687   0.934       y=0.934       ?=0.000       ?=0.000  ← LM confident
+   115   ' '   -0.3971   0.672     ' '=0.672       ?=0.000       ?=0.000  
+
+  Score breakdown:
+    ELM total log-prob:  -142.9432  (sum of per-char log-probs)
+    Hypothesis length:   116 characters
+    ELM / length:        -1.2323
+    α × ELM/length:      -39.433  (alpha=32.0)
+    CTC score:           -4.045
+    ─────────────────────────────
+    Combined:            -43.477  = -4.045 + -39.433
+
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Example 3
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Reference:     it is annoyance then
+  Greedy:        it is annoyance then a
+  CTC best:      it is annoyance then a
+  ELM rescored:  it is annoyance then he
+  *** RESCORING CHANGED THE WINNER ***
+
+  Rank         CTC     ELM/len   α×ELM/len    Combined  Hypothesis
+  ────  ──────────  ──────────  ──────────  ──────────  ────────────────────────────────────────
+     1      -3.793     -1.7375     -55.599     -59.393  "it is annoyance then he" (CTC #10) ←
+     2      -2.992     -1.7944     -57.421     -60.413  "it is annoyance then a" (CTC #1)
+     3      -3.395     -1.7836     -57.075     -60.470  "it is annoyance then " (CTC #4)
+     4      -3.591     -1.7835     -57.073     -60.664  "it is annoyance then ha" (CTC #7)
+     5      -3.591     -1.7913     -57.322     -60.913  "it is annoyance then i" (CTC #6)
+     6      -3.690     -1.8519     -59.259     -62.949  "it is annoyance then wa" (CTC #8)
+     7      -3.194     -1.8807     -60.183     -63.378  "it is annoyance then e" (CTC #2)
+     8      -3.285     -1.8852     -60.328     -63.612  "it is annoyance then o" (CTC #3)
+     9      -3.558     -1.8901     -60.482     -64.040  "it is annoyance then ta" (CTC #5)
+    10      -3.760     -1.8952     -60.646     -64.406  "it is annoyance then te" (CTC #9)
+
+  Per-character ELM scoring for winner: "it is annoyance then he"
+  (Each row: what the LM predicted vs what appeared, P = probability the LM assigned)
+   Pos  Char      logP        P         Top-1         Top-2         Top-3  Note
+  ────  ────  ────────  ───────  ────────────  ────────────  ────────────  ────────────────────
+     0     i   -3.8364   0.022       i=0.022       ?=0.000       ?=0.000  ← LM surprised
+     1     t   -3.0146   0.049       t=0.049       ?=0.000       ?=0.000  ← LM surprised
+     2   ' '   -2.2233   0.108     ' '=0.108       ?=0.000       ?=0.000  
+     3     i   -2.8452   0.058       i=0.058       ?=0.000       ?=0.000  
+     4     s   -1.2485   0.287       s=0.287       ?=0.000       ?=0.000  
+     5   ' '   -0.9627   0.382     ' '=0.382       ?=0.000       ?=0.000  
+     6     a   -2.8498   0.058       a=0.058       ?=0.000       ?=0.000  
+     7     n   -3.0658   0.047       n=0.047       ?=0.000       ?=0.000  ← LM surprised
+     8     n   -5.3388   0.005       n=0.005       ?=0.000       ?=0.000  ← LM surprised
+     9     o   -0.4055   0.667       o=0.667       ?=0.000       ?=0.000  
+    10     y   -1.1632   0.312       y=0.312       ?=0.000       ?=0.000  
+    11     a   -3.7136   0.024       a=0.024       ?=0.000       ?=0.000  ← LM surprised
+    12     n    0.0000   1.000       n=1.000       ?=0.000       ?=0.000  ← LM confident
+    13     c    0.0000   1.000       c=1.000       ?=0.000       ?=0.000  ← LM confident
+    14     e    0.0000   1.000       e=1.000       ?=0.000       ?=0.000  ← LM confident
+    15   ' '   -0.3650   0.694     ' '=0.694       ?=0.000       ?=0.000  
+    16     t   -1.8744   0.153       t=0.153       ?=0.000       ?=0.000  
+    17     h   -0.5749   0.563       h=0.563       ?=0.000       ?=0.000  
+    18     e   -0.9890   0.372       e=0.372       ?=0.000       ?=0.000  
+    19     n   -2.9232   0.054       n=0.054       ?=0.000       ?=0.000  
+    20   ' '   -0.0617   0.940     ' '=0.940       ?=0.000       ?=0.000  ← LM confident
+    21     h   -2.0768   0.125       h=0.125       ?=0.000       ?=0.000  
+    22     e   -0.4296   0.651       e=0.651       ?=0.000       ?=0.000  
+
+  Score breakdown:
+    ELM total log-prob:  -39.9619  (sum of per-char log-probs)
+    Hypothesis length:   23 characters
+    ELM / length:        -1.7375
+    α × ELM/length:      -55.599  (alpha=32.0)
+    CTC score:           -3.793
+    ─────────────────────────────
+    Combined:            -59.393  = -3.793 + -55.599
+
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Example 4
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Reference:     in those very terms i even added more
+  Greedy:        in those very terms i even addit more 
+  CTC best:      in those very terms i even addit more 
+  ELM rescored:  in those very terms i even addit more i
+  *** RESCORING CHANGED THE WINNER ***
+
+  Rank         CTC     ELM/len   α×ELM/len    Combined  Hypothesis
+  ────  ──────────  ──────────  ──────────  ──────────  ────────────────────────────────────────
+     1      -4.416     -2.4852     -79.525     -83.941  "in those very terms i even addit more i" (CTC #6) ←
+     2      -3.104     -2.5506     -81.618     -84.722  "in those very terms i even addit more " (CTC #1)
+     3      -3.751     -2.5651     -82.085     -85.835  "in those very terms i even addit more a" (CTC #2)
+     4      -4.412     -2.5835     -82.673     -87.085  "in those very terms i even addit more e" (CTC #5)
+     5      -4.324     -2.5883     -82.827     -87.151  "in those very terms i even addet more " (CTC #4)
+     6      -4.477     -2.5837     -82.679     -87.156  "in those very terms i even addit more o" (CTC #7)
+     7      -4.780     -2.5935     -82.992     -87.771  "in those very terms i even addid more " (CTC #10)
+     8      -4.275     -2.6094     -83.499     -87.774  "in those very terms i even addit more h" (CTC #3)
+     9      -4.734     -2.6123     -83.594     -88.328  "in those very terms i even addit more n"
+    10      -4.510     -2.7194     -87.021     -91.531  "in those very terms i even haddit more " (CTC #8)
+
+  Per-character ELM scoring for winner: "in those very terms i even addit more i"
+  (Each row: what the LM predicted vs what appeared, P = probability the LM assigned)
+   Pos  Char      logP        P         Top-1         Top-2         Top-3  Note
+  ────  ────  ────────  ───────  ────────────  ────────────  ────────────  ────────────────────
+     0     i   -3.8364   0.022       i=0.022       ?=0.000       ?=0.000  ← LM surprised
+     1     n   -2.2228   0.108       n=0.108       ?=0.000       ?=0.000  
+     2   ' '   -2.2367   0.107     ' '=0.107       ?=0.000       ?=0.000  
+     3     t   -2.0618   0.127       t=0.127       ?=0.000       ?=0.000  
+     4     h   -1.0184   0.361       h=0.361       ?=0.000       ?=0.000  
+     5     o   -5.2887   0.005       o=0.005       ?=0.000       ?=0.000  ← LM surprised
+     6     s   -1.3148   0.269       s=0.269       ?=0.000       ?=0.000  
+     7     e   -0.9165   0.400       e=0.400       ?=0.000       ?=0.000  
+     8   ' '   -0.9169   0.400     ' '=0.400       ?=0.000       ?=0.000  
+     9     v   -4.5254   0.011       v=0.011       ?=0.000       ?=0.000  ← LM surprised
+    10     e   -0.6348   0.530       e=0.530       ?=0.000       ?=0.000  
+    11     r   -0.2132   0.808       r=0.808       ?=0.000       ?=0.000  ← LM confident
+    12     y   -0.1654   0.848       y=0.848       ?=0.000       ?=0.000  ← LM confident
+    13   ' '    0.0000   1.000     ' '=1.000       ?=0.000       ?=0.000  ← LM confident
+    14     t   -2.8946   0.055       t=0.055       ?=0.000       ?=0.000  
+    15     e   -2.4532   0.086       e=0.086       ?=0.000       ?=0.000  
+    16     r   -1.3451   0.261       r=0.261       ?=0.000       ?=0.000  
+    17     m   -2.2711   0.103       m=0.103       ?=0.000       ?=0.000  
+    18     s   -1.2164   0.296       s=0.296       ?=0.000       ?=0.000  
+    19   ' '    0.0000   1.000     ' '=1.000       ?=0.000       ?=0.000  ← LM confident
+    20     i   -2.5802   0.076       i=0.076       ?=0.000       ?=0.000  
+    21   ' '   -1.3863   0.250     ' '=0.250       ?=0.000       ?=0.000  
+    22     e   -3.8712   0.021       e=0.021       ?=0.000       ?=0.000  ← LM surprised
+    23     v   -3.4420   0.032       v=0.032       ?=0.000       ?=0.000  ← LM surprised
+    24     e   -0.9163   0.400       e=0.400       ?=0.000       ?=0.000  
+    25     n   -4.4992   0.011       n=0.011       ?=0.000       ?=0.000  ← LM surprised
+    26   ' '   -0.9837   0.374     ' '=0.374       ?=0.000       ?=0.000  
+    27     a   -2.3749   0.093       a=0.093       ?=0.000       ?=0.000  
+    28     d   -2.0794   0.125       d=0.125       ?=0.000       ?=0.000  
+    29     d   -0.6931   0.500       d=0.500       ?=0.000       ?=0.000  
+    30     i   -2.3514   0.095       i=0.095       ?=0.000       ?=0.000  
+    31     t   -0.9808   0.375       t=0.375       ?=0.000       ?=0.000  
+    32   ' '  -12.5931   0.000     ' '=0.000       ?=0.000       ?=0.000  ← LM surprised
+    33     m   -8.1517   0.000       m=0.000       ?=0.000       ?=0.000  ← LM surprised
+    34     o   -6.0437   0.002       o=0.002       ?=0.000       ?=0.000  ← LM surprised
+    35     r   -5.0002   0.007       r=0.007       ?=0.000       ?=0.000  ← LM surprised
+    36     e   -1.8326   0.160       e=0.160       ?=0.000       ?=0.000  
+    37   ' '   -1.6094   0.200     ' '=0.200       ?=0.000       ?=0.000  
+    38     i    0.0000   1.000       i=1.000       ?=0.000       ?=0.000  ← LM confident
+
+  Score breakdown:
+    ELM total log-prob:  -96.9215  (sum of per-char log-probs)
+    Hypothesis length:   39 characters
+    ELM / length:        -2.4852
+    α × ELM/length:      -79.525  (alpha=32.0)
+    CTC score:           -4.416
+    ─────────────────────────────
+    Combined:            -83.941  = -4.416 + -79.525
+
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Example 5
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Reference:     thus it is that the honor of three is saved our country's our master's and our own
+  Greedy:        thus it is that the honor of three is saved our country our masters and our own 
+  CTC best:      thus it is that the honor of three is saved our country our masters and our own 
+  ELM rescored:  thus it is that the honour of three is saved our country our masters and our own 
+  *** RESCORING CHANGED THE WINNER ***
+
+  Rank         CTC     ELM/len   α×ELM/len    Combined  Hypothesis
+  ────  ──────────  ──────────  ──────────  ──────────  ────────────────────────────────────────
+     1      -2.164     -1.2747     -40.791     -42.955  "thus it is that the honour of three is saved our country our masters and our own " (CTC #3) ←
+     2      -1.613     -1.3079     -41.852     -43.465  "thus it is that the honor of three is saved our country our masters and our own " (CTC #1)
+     3      -4.636     -1.3512     -43.239     -47.874  "thus it is that the honor of three is saved our country or masters and our own " (CTC #5)
+     4      -8.037     -1.2977     -41.527     -49.564  "thus it is that the honour of three is saved our country our masters and our own i" (CTC #9)
+     5      -7.485     -1.3308     -42.584     -50.070  "thus it is that the honor of three is saved our country our masters and our own i" (CTC #7)
+     6      -2.181     -1.6066     -51.411     -53.592  "thus it is that the honour of three is safed our country our masters and our own " (CTC #4)
+     7      -1.630     -1.6439     -52.605     -54.235  "thus it is that the honor of three is safed our country our masters and our own " (CTC #2)
+     8      -4.652     -1.6915     -54.128     -58.781  "thus it is that the honor of three is safed our country or masters and our own " (CTC #6)
+     9      -8.053     -1.6256     -52.018     -60.072  "thus it is that the honour of three is safed our country our masters and our own i" (CTC #10)
+    10      -7.502     -1.6627     -53.205     -60.707  "thus it is that the honor of three is safed our country our masters and our own i" (CTC #8)
+
+  Per-character ELM scoring for winner: "thus it is that the honour of three is saved our country our masters and our own "
+  (Each row: what the LM predicted vs what appeared, P = probability the LM assigned)
+   Pos  Char      logP        P         Top-1         Top-2         Top-3  Note
+  ────  ────  ────────  ───────  ────────────  ────────────  ────────────  ────────────────────
+     0     t   -3.5191   0.030       t=0.030       ?=0.000       ?=0.000  ← LM surprised
+     1     h   -2.0439   0.130       h=0.130       ?=0.000       ?=0.000  
+     2     u   -6.3589   0.002       u=0.002       ?=0.000       ?=0.000  ← LM surprised
+     3     s   -1.4379   0.237       s=0.237       ?=0.000       ?=0.000  
+     4   ' '   -1.1947   0.303     ' '=0.303       ?=0.000       ?=0.000  
+     5     i   -3.3492   0.035       i=0.035       ?=0.000       ?=0.000  ← LM surprised
+     6     t   -2.1065   0.122       t=0.122       ?=0.000       ?=0.000  
+     7   ' '   -0.9358   0.392     ' '=0.392       ?=0.000       ?=0.000  
+     8     i   -2.4591   0.086       i=0.086       ?=0.000       ?=0.000  
+     9     s    0.0000   1.000       s=1.000       ?=0.000       ?=0.000  ← LM confident
+    10   ' '   -0.0163   0.984     ' '=0.984       ?=0.000       ?=0.000  ← LM confident
+    11     t   -1.3740   0.253       t=0.253       ?=0.000       ?=0.000  
+    12     h   -0.5188   0.595       h=0.595       ?=0.000       ?=0.000  
+    13     a   -1.4333   0.239       a=0.239       ?=0.000       ?=0.000  
+    14     t   -0.0087   0.991       t=0.991       ?=0.000       ?=0.000  ← LM confident
+    15   ' '   -0.0338   0.967     ' '=0.967       ?=0.000       ?=0.000  ← LM confident
+    16     t   -1.6412   0.194       t=0.194       ?=0.000       ?=0.000  
+    17     h   -0.0996   0.905       h=0.905       ?=0.000       ?=0.000  ← LM confident
+    18     e   -0.1242   0.883       e=0.883       ?=0.000       ?=0.000  ← LM confident
+    19   ' '   -0.4426   0.642     ' '=0.642       ?=0.000       ?=0.000  
+    20     h   -3.4356   0.032       h=0.032       ?=0.000       ?=0.000  ← LM surprised
+    21     o   -0.9541   0.385       o=0.385       ?=0.000       ?=0.000  
+    22     n   -3.4627   0.031       n=0.031       ?=0.000       ?=0.000  ← LM surprised
+    23     o   -0.4576   0.633       o=0.633       ?=0.000       ?=0.000  
+    24     u   -0.5867   0.556       u=0.556       ?=0.000       ?=0.000  
+    25     r    0.0000   1.000       r=1.000       ?=0.000       ?=0.000  ← LM confident
+    26   ' '   -0.4355   0.647     ' '=0.647       ?=0.000       ?=0.000  
+    27     o   -0.6105   0.543       o=0.543       ?=0.000       ?=0.000  
+    28     f   -0.1118   0.894       f=0.894       ?=0.000       ?=0.000  ← LM confident
+    29   ' '   -0.0024   0.998     ' '=0.998       ?=0.000       ?=0.000  ← LM confident
+    30     t   -1.1755   0.309       t=0.309       ?=0.000       ?=0.000  
+    31     h   -0.0380   0.963       h=0.963       ?=0.000       ?=0.000  ← LM confident
+    32     r   -5.5369   0.004       r=0.004       ?=0.000       ?=0.000  ← LM surprised
+    33     e   -0.1178   0.889       e=0.889       ?=0.000       ?=0.000  ← LM confident
+    34     e   -0.0687   0.934       e=0.934       ?=0.000       ?=0.000  ← LM confident
+    35   ' '   -0.0337   0.967     ' '=0.967       ?=0.000       ?=0.000  ← LM confident
+    36     i   -3.9407   0.019       i=0.019       ?=0.000       ?=0.000  ← LM surprised
+    37     s   -2.3461   0.096       s=0.096       ?=0.000       ?=0.000  
+    38   ' '   -0.3514   0.704     ' '=0.704       ?=0.000       ?=0.000  
+    39     s   -2.9444   0.053       s=0.053       ?=0.000       ?=0.000  
+    40     a   -3.4218   0.033       a=0.033       ?=0.000       ?=0.000  ← LM surprised
+    41     v   -4.6283   0.010       v=0.010       ?=0.000       ?=0.000  ← LM surprised
+    42     e   -1.2347   0.291       e=0.291       ?=0.000       ?=0.000  
+    43     d   -0.0645   0.938       d=0.938       ?=0.000       ?=0.000  ← LM confident
+    44   ' '   -0.4456   0.640     ' '=0.640       ?=0.000       ?=0.000  
+    45     o   -3.1135   0.044       o=0.044       ?=0.000       ?=0.000  ← LM surprised
+    46     u   -1.1260   0.324       u=0.324       ?=0.000       ?=0.000  
+    47     r   -0.3054   0.737       r=0.737       ?=0.000       ?=0.000  
+    48   ' '   -0.1133   0.893     ' '=0.893       ?=0.000       ?=0.000  ← LM confident
+    49     c   -2.4744   0.084       c=0.084       ?=0.000       ?=0.000  
+    50     o   -0.9734   0.378       o=0.378       ?=0.000       ?=0.000  
+    51     u   -0.9647   0.381       u=0.381       ?=0.000       ?=0.000  
+    52     n   -0.8868   0.412       n=0.412       ?=0.000       ?=0.000  
+    53     t   -0.0564   0.945       t=0.945       ?=0.000       ?=0.000  ← LM confident
+    54     r   -0.0997   0.905       r=0.905       ?=0.000       ?=0.000  ← LM confident
+    55     y   -0.0097   0.990       y=0.990       ?=0.000       ?=0.000  ← LM confident
+    56   ' '   -0.4142   0.661     ' '=0.661       ?=0.000       ?=0.000  
+    57     o   -2.8517   0.058       o=0.058       ?=0.000       ?=0.000  
+    58     u   -3.2972   0.037       u=0.037       ?=0.000       ?=0.000  ← LM surprised
+    59     r   -0.8979   0.407       r=0.407       ?=0.000       ?=0.000  
+    60   ' '   -0.1206   0.886     ' '=0.886       ?=0.000       ?=0.000  ← LM confident
+    61     m   -3.1355   0.043       m=0.043       ?=0.000       ?=0.000  ← LM surprised
+    62     a   -0.9163   0.400       a=0.400       ?=0.000       ?=0.000  
+    63     s   -0.9808   0.375       s=0.375       ?=0.000       ?=0.000  
+    64     t   -0.1335   0.875       t=0.875       ?=0.000       ?=0.000  ← LM confident
+    65     e   -0.1139   0.892       e=0.892       ?=0.000       ?=0.000  ← LM confident
+    66     r   -0.0080   0.992       r=0.992       ?=0.000       ?=0.000  ← LM confident
+    67     s   -2.1743   0.114       s=0.114       ?=0.000       ?=0.000  
+    68   ' '   -0.2295   0.795     ' '=0.795       ?=0.000       ?=0.000  
+    69     a   -1.6335   0.195       a=0.195       ?=0.000       ?=0.000  
+    70     n   -0.3748   0.687       n=0.687       ?=0.000       ?=0.000  
+    71     d   -0.0266   0.974       d=0.974       ?=0.000       ?=0.000  ← LM confident
+    72   ' '    0.0000   1.000     ' '=1.000       ?=0.000       ?=0.000  ← LM confident
+    73     o   -3.2080   0.040       o=0.040       ?=0.000       ?=0.000  ← LM surprised
+    74     u   -2.6920   0.068       u=0.068       ?=0.000       ?=0.000  
+    75     r   -0.8633   0.422       r=0.422       ?=0.000       ?=0.000  
+    76   ' '   -0.0762   0.927     ' '=0.927       ?=0.000       ?=0.000  ← LM confident
+    77     o   -2.8026   0.061       o=0.061       ?=0.000       ?=0.000  
+    78     w   -0.6141   0.541       w=0.541       ?=0.000       ?=0.000  
+    79     n    0.0000   1.000       n=1.000       ?=0.000       ?=0.000  ← LM confident
+    80   ' '   -0.0606   0.941     ' '=0.941       ?=0.000       ?=0.000  ← LM confident
+
+  Score breakdown:
+    ELM total log-prob:  -103.2514  (sum of per-char log-probs)
+    Hypothesis length:   81 characters
+    ELM / length:        -1.2747
+    α × ELM/length:      -40.791  (alpha=32.0)
+    CTC score:           -2.164
+    ─────────────────────────────
+    Combined:            -42.955  = -2.164 + -40.791
+
+
+==========================================================================================
+  EXAMPLES WHERE ELM CONFIRMED THE CTC TOP HYPOTHESIS
+==========================================================================================
+
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Example 1
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Reference:     concord returned to its place amidst the tents
+  Greedy:        concord returned to its place amidst the tents 
+  CTC best:      concord returned to its place amidst the tents 
+  ELM rescored:  concord returned to its place amidst the tents 
+
+  Rank         CTC     ELM/len   α×ELM/len    Combined  Hypothesis
+  ────  ──────────  ──────────  ──────────  ──────────  ────────────────────────────────────────
+     1      -0.585     -1.1743     -37.579     -38.164  "concord returned to its place amidst the tents " ←
+     2      -6.223     -1.1750     -37.601     -43.824  "concord returned to its place amidst the tent " (CTC #8)
+     3      -7.422     -1.2237     -39.157     -46.579  "concord returned to its place amidst the tents a " (CTC #10)
+     4      -7.226     -1.2444     -39.820     -47.045  "concord returned to its place amidst the tents i " (CTC #9)
+     5      -4.276     -1.4122     -45.190     -49.466  "concord returne to its place amidst the tents "
+     6      -4.667     -1.4981     -47.938     -52.604  "concord re turned to its place amidst the tents "
+     7      -2.131     -1.6517     -52.853     -54.984  "corncord returned to its place amidst the tents " (CTC #2)
+     8      -3.774     -1.6438     -52.603     -56.376  "conchord returned to its place amidst the tents " (CTC #3)
+     9      -5.094     -1.7178     -54.970     -60.065  "coacord returned to its place amidst the tents " (CTC #7)
+    10      -4.094     -1.9563     -62.600     -66.694  "concord returnd to its place amidst the tents " (CTC #4)
+
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Example 2
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Reference:     the english forwarded to the french baskets of flowers of which they had made a plentiful provision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day
+  Greedy:        the english forwarded to the french baskets of flowers of which they had made a pontipale pr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day 
+  CTC best:      the english forwarded to the french baskets of flowers of which they had made a pointipale pr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day 
+  ELM rescored:  the english forwarded to the french baskets of flowers of which they had made a pointipale pr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day 
+
+  Rank         CTC     ELM/len   α×ELM/len    Combined  Hypothesis
+  ────  ──────────  ──────────  ──────────  ──────────  ────────────────────────────────────────
+     1      -6.815     -1.3895     -44.464     -51.279  "the english forwarded to the french baskets of flowers of which they had made a pointipale pr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day " ←
+     2      -7.060     -1.3924     -44.558     -51.618  "the english forwarded to the french baskets of flowers of which they had made a pointipale fr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day "
+     3      -7.509     -1.3920     -44.544     -52.053  "the english forwarded to the french baskets of flowers of which they had made a pointipale pr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day w"
+     4      -7.623     -1.3905     -44.497     -52.120  "the english forwarded to the french baskets of flowers of which they had made a pointipale pr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day t" (CTC #5)
+     5      -7.511     -1.3942     -44.614     -52.125  "the english forwarded to the french baskets of flowers of which they had made a pointipale pr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day h" (CTC #4)
+     6      -7.754     -1.3949     -44.638     -52.391  "the english forwarded to the french baskets of flowers of which they had made a pointipale fr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day w"
+     7      -7.868     -1.3935     -44.591     -52.459  "the english forwarded to the french baskets of flowers of which they had made a pointipale fr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day t" (CTC #8)
+     8      -7.756     -1.3971     -44.707     -52.463  "the english forwarded to the french baskets of flowers of which they had made a pointipale fr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day h" (CTC #7)
+     9      -8.319     -1.3860     -44.352     -52.670  "the english forwarded to the french baskets of flowers of which they had made a pointipale pr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day th" (CTC #10)
+    10      -8.213     -1.3899     -44.477     -52.690  "the english forwarded to the french baskets of flowers of which they had made a pointipale pr vision to greet the arrival of the young princess the french in return invited the english to a supper which was to be given the next day wh" (CTC #9)
+
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Example 3
+  ──────────────────────────────────────────────────────────────────────────────────────
+  Reference:     congratulations were poured in upon the princess everywhere during her journey
+  Greedy:        congratulations were poured in upon the princess everywhere during her journey 
+  CTC best:      congratulations were poured in upon the princess everywhere during her journey 
+  ELM rescored:  congratulations were poured in upon the princess everywhere during her journey 
+
+  Rank         CTC     ELM/len   α×ELM/len    Combined  Hypothesis
+  ────  ──────────  ──────────  ──────────  ──────────  ────────────────────────────────────────
+     1      -0.098     -0.8638     -27.642     -27.740  "congratulations were poured in upon the princess everywhere during her journey " ←
+     2      -3.262     -0.9018     -28.858     -32.119  "congratulations were poured in upon the princess every where during her journey "
+     3      -7.980     -0.8768     -28.056     -36.036  "congratulations were poured in upon the princess everywhere during her journey a" (CTC #7)
+     4      -8.155     -0.8838     -28.280     -36.436  "congratulations were poured in upon the princess everywhere during her journey i" (CTC #8)
+     5      -9.907     -0.8709     -27.869     -37.776  "congratulations were poured in upon the princess everywhere during her journey t" (CTC #9)
+     6     -10.043     -0.8944     -28.622     -38.665  "congratulations were poured in upon the princess everywhere during her journey s" (CTC #10)
+     7      -5.901     -1.0519     -33.662     -39.563  "congratulations were pour'd in upon the princess everywhere during her journey " (CTC #4)
+     8      -7.160     -1.0714     -34.284     -41.444  "congratulations were poured in pon the princess everywhere during her journey " (CTC #5)
+     9      -3.832     -1.1784     -37.710     -41.542  "congratulations were pored in upon the princess everywhere during her journey " (CTC #3)
+    10      -7.206     -1.2806     -40.981     -48.187  "congratulations rere poured in upon the princess everywhere during her journey " (CTC #6)
+
+
+==========================================================================================
+  AGGREGATE SCORE STATISTICS (2620 utterances, 26200 hypotheses)
+==========================================================================================
+
+  CTC log-prob scores (sum over all frames):
+    Range:  [-24.62, -0.01]
+    Mean:   -4.25  (std: 1.97)
+    Median: -3.93
+
+  ELM log-prob per character:
+    Range:  [-7.1183, -0.6717]
+    Mean:   -1.4408  (std: 0.4781)
+
+  Score composition at alpha=32.0:
+    Typical CTC score:           -4.25
+    Typical ELM contribution:    -46.11  (alpha × -1.4408)
+    Typical combined score:      -50.36
+    ELM share of combined:       91.6%
+
+  Score spread across beam hypotheses (median):
+    CTC spread:                  2.2331
+    ELM/len spread:              0.1748
+    ELM × alpha spread:          5.5923
+    Ratio (ELM×alpha / CTC):     250.4%
+
+  Re-ranking summary:
+    Utterances processed:        2620
+    Re-ranked by ELM:            838 (32.0%)
+    Confirmed CTC choice:        1782 (68.0%)
+
+  How to read the combined score:
+    combined = CTC_score + alpha * (ELM_total / |hypothesis|)
+    Example: -0.585 + 32.0 × (-1.1743) = -38.164
+    The CTC score is a large negative number (sum of log-probs over ~100-500 frames).
+    The ELM score is a small negative number (avg log-prob per character, ~20-100 chars).
+    Alpha=32.0 amplifies the ELM so it can influence the ranking despite its small scale.
+==========================================================================================
+
+
+  Text log saved: ilme_mamba_results_ngram10_score_analysis_ssssm_960h/score_analysis_alpha32.0_beam10.txt
+/home/coder/IKT590_Masters_thesis/IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py:1990: MatplotlibDeprecationWarning: The 'labels' parameter of boxplot() has been renamed 'tick_labels' since Matplotlib 3.9; support for the old name will be dropped in 3.11.
+  bp = ax.boxplot(spread_data, labels=['CTC Spread', f'ELM×α Spread'],
+
+  Figures saved (15 files):
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_score_distributions.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_score_composition_pie.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_ctc_vs_elm_scatter.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_per_char_probs_example1.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_per_char_probs_example2.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_per_char_probs_example3.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_per_char_probs_example4.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_per_char_probs_example5.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_per_char_probs_example6.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_rescoring_waterfall_example1.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_rescoring_waterfall_example2.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_rescoring_waterfall_example3.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_rescoring_waterfall_example4.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_alpha_scale_comparison.pdf
+    ilme_mamba_results_ngram10_score_analysis_ssssm_960h/figures/fig_summary_table.pdf
+
+Results: ilme_mamba_results_ngram10_score_analysis_ssssm_960h/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 

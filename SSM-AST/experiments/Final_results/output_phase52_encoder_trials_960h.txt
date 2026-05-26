@@ -1,0 +1,245 @@
+
+================================================================================
+PHASE 5.2: Encoder Trials 960h (S-SSSM vs mamb1) ( >>> FILE: output_phase52_encoder_trials_960h.txt <<< )
+================================================================================
+
+# 5.2.1 S-SSSM ENCODER + Mamba-1 ELM   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path ./hub_data/librispeech --dataset-config 100h --asr-checkpoint "encoder_checkpoints/S-SSSM/960h/checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 --alpha 8.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name p52_sssm_960h_mamba1-elm_eval_a8
+
+# 5.2.2 MAMBA-1 ENCODER + Mamba-1 ELM   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path ./hub_data/librispeech --dataset-config 100h --asr-checkpoint "encoder_checkpoints/mamba1/960h/mamba1_960h_W320_D48/best_epoch=100_val_wer=0.155.ckpt" --asr-type mamba --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 --alpha 8.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name p52_mamba1_960h_mamba1-elm_eval_a8
+
+# 5.2.3 MAMBA-3 ENCODER + Mamba-1 ELM   -   (Done)
+python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path ./hub_data/librispeech --dataset-config 100h --asr-checkpoint "encoder_checkpoints/mamba3/960h/" --asr-type mamba3 --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 --alpha 8.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name p52_mamba3_960h_enc_mamba1-elm_eval_a8
+
+
+
+
+Terminal log:
+"
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path ./hub_data/li
+brispeech --dataset-config 100h --asr-checkpoint "encoder_checkpoints/S-SSSM/960h/checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt" --asr-type sssm --
+elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 --alpha 8.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name p52_sssm_960h_mamba1-elm_eval_a8
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading sssm checkpoint: encoder_checkpoints/S-SSSM/960h/checkpoints_v77_960h_hier_gating_320_48/best_epoch=98_val_wer=0.111.ckpt
+[LoadASR] Loaded: d_model=320, layers=48, params=35,028,669
+
+[CharMambaLM] 12,184,349 params (d=320, L=18, N=16, expand=2, hier=False)
+[LoadLM] ELM (mamba) from lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18/elm_best.pt (loss=1.3959)
+Loading dataset from disk: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:00<00:00, 29742.44it/s]
+Loading dataset from disk: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:00<00:00, 44172.36it/s]
+
+======================================================================
+  Full Evaluation: test-clean
+======================================================================
+  2620 utterances.
+
+  --- Greedy (baseline) ---
+    WER=6.17% (S=4.6% D=0.4% I=1.2%) P=94.3% R=95.0% F1=94.7%
+  --- Beam W=10 ---
+    WER=6.07% (S=4.5% D=0.4% I=1.2%) P=94.4% R=95.1% F1=94.7%
+  --- Beam+ELM (a=8.0) ---
+    WER=5.60% (S=4.2% D=0.4% I=1.0%) P=94.8% R=95.4% F1=95.1%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                     6.17%  94.3%  95.0%  94.7%
+  Beam W=10                             6.07%  94.4%  95.1%  94.7%
+  Beam+ELM (a=8.0)                      5.60%  94.8%  95.4%  95.1%
+==========================================================================================
+
+======================================================================
+  Full Evaluation: test-other
+======================================================================
+  2939 utterances.
+
+  --- Greedy (baseline) ---
+    WER=16.23% (S=12.7% D=1.4% I=2.1%) P=85.3% R=85.9% F1=85.6%
+  --- Beam W=10 ---
+    WER=16.04% (S=12.5% D=1.4% I=2.2%) P=85.4% R=86.1% F1=85.8%
+  --- Beam+ELM (a=8.0) ---
+    WER=15.33% (S=12.0% D=1.3% I=2.0%) P=86.1% R=86.7% F1=86.4%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                    16.23%  85.3%  85.9%  85.6%
+  Beam W=10                            16.04%  85.4%  86.1%  85.8%
+  Beam+ELM (a=8.0)                     15.33%  86.1%  86.7%  86.4%
+==========================================================================================
+
+Results: ilme_mamba_results_p52_sssm_960h_mamba1-elm_eval_a8/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path ./hub_data/librispeech --dataset-config 100h --asr-checkpoint "encoder_checkpoints/mamba1/960h/mamba1_960h_W320_D48/best_epoch=100_val_wer=0.155.ckpt" --asr-type mamba --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 --alpha 8.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name p52_mamba1_960h_mamba1-elm_eval_a8
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading mamba checkpoint: encoder_checkpoints/mamba1/960h/mamba1_960h_W320_D48/best_epoch=100_val_wer=0.155.ckpt
+
+
+SSM-ASR: HIERARCHICAL STATES + GATING
+
+
+GPU: NVIDIA H100 80GB HBM3
+Memory: 79.2 GB
+Compute: TF32 enabled
+Mamba Backend: CUDA kernels (mamba_ssm) - FAST
+Vocabulary: 28 characters + blank token
+Audio: 16000Hz, 80-dim log mel-spectrogram
+Subsampling: 4x
+
+
+Mamba Encoder Configuration:
+  d_model=320, d_state=16, d_conv=4, expand=2
+  n_layers=48, hierarchical=False
+  d_inner=640
+  Backend: CUDA (mamba_ssm)
+
+Model Parameters:
+  Encoder type: MAMBA
+  Total: 32,770,749 (32.77M)
+  Trainable: 32,770,749
+[LoadASR] Loaded: d_model=320, layers=48, params=32,770,749
+
+[CharMambaLM] 12,184,349 params (d=320, L=18, N=16, expand=2, hier=False)
+[LoadLM] ELM (mamba) from lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18/elm_best.pt (loss=1.3959)
+Loading dataset from disk: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:00<00:00, 123.92it/s]
+Loading dataset from disk: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:00<00:00, 110.91it/s]
+
+======================================================================
+  Full Evaluation: test-clean
+======================================================================
+  2620 utterances.
+
+  --- Greedy (baseline) ---
+    WER=8.17% (S=6.8% D=0.6% I=0.7%) P=92.5% R=92.5% F1=92.5%
+  --- Beam W=10 ---
+    WER=8.06% (S=6.7% D=0.6% I=0.7%) P=92.6% R=92.6% F1=92.6%
+  --- Beam+ELM (a=8.0) ---
+    WER=7.40% (S=6.2% D=0.6% I=0.7%) P=93.2% R=93.3% F1=93.2%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                     8.17%  92.5%  92.5%  92.5%
+  Beam W=10                             8.06%  92.6%  92.6%  92.6%
+  Beam+ELM (a=8.0)                      7.40%  93.2%  93.3%  93.2%
+==========================================================================================
+
+======================================================================
+  Full Evaluation: test-other
+======================================================================
+  2939 utterances.
+
+  --- Greedy (baseline) ---
+    WER=20.49% (S=16.9% D=1.9% I=1.7%) P=81.4% R=81.2% F1=81.3%
+  --- Beam W=10 ---
+    WER=20.22% (S=16.6% D=1.9% I=1.7%) P=81.6% R=81.5% F1=81.5%
+  --- Beam+ELM (a=8.0) ---
+    WER=19.26% (S=15.8% D=1.8% I=1.7%) P=82.5% R=82.4% F1=82.5%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                    20.49%  81.4%  81.2%  81.3%
+  Beam W=10                            20.22%  81.6%  81.5%  81.5%
+  Beam+ELM (a=8.0)                     19.26%  82.5%  82.4%  82.5%
+==========================================================================================
+
+Results: ilme_mamba_results_p52_mamba1_960h_mamba1-elm_eval_a8/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ python IKT464_Script_ASR_SSSM_CharMambaLM_v1_4.py --mode full_eval --data-path ./hub_data/librispeech --dataset-config 100h --asr-checkpoint "encoder_checkpoints/mamba3/960h/mamba3_960h_W-320_D-48_S-16_b-64_E-100/best_epoch=91_val_wer=0.186.ckpt" --asr-type mamba3 --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 --alpha 8.0 --beta 0.0 --beam-width 10 --batch-size 64 --exp-name p52_mamba3_960h_enc_mamba1-elm_eval_a8
+/home/coder/.local/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[OK] mamba_ssm loaded — CUDA Mamba available
+
+[LoadASR] Loading mamba3 checkpoint: encoder_checkpoints/mamba3/960h/mamba3_960h_W-320_D-48_S-16_b-64_E-100/best_epoch=91_val_wer=0.186.ckpt
+
+
+SSM-ASR: HIERARCHICAL STATES + GATING
+
+
+GPU: NVIDIA H100 80GB HBM3
+Memory: 79.2 GB
+Compute: TF32 enabled
+Mamba Backend: CUDA kernels (mamba_ssm) - FAST
+Vocabulary: 28 characters + blank token
+Audio: 16000Hz, 80-dim log mel-spectrogram
+Subsampling: 4x
+
+
+Mamba-3 Encoder Configuration:
+  d_model=320, d_state=16, headdim=64, SISO
+  n_layers=48, hierarchical=False
+  dtype=torch.bfloat16, backend=official mamba_ssm (Triton)
+
+Model Parameters:
+  Encoder type: MAMBA3
+  Total: 30,868,285 (30.87M)
+  Trainable: 30,868,285
+[LoadASR] Loaded: d_model=320, layers=48, params=30,868,285
+
+[CharMambaLM] 12,184,349 params (d=320, L=18, N=16, expand=2, hier=False)
+[LoadLM] ELM (mamba) from lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18/elm_best.pt (loss=1.3959)
+Loading dataset from disk: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [00:00<00:00, 103.25it/s]
+Loading dataset from disk: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 64/64 [00:00<00:00, 101.71it/s]
+
+======================================================================
+  Full Evaluation: test-clean
+======================================================================
+  2620 utterances.
+
+  --- Greedy (baseline) ---
+    WER=10.51% (S=8.7% D=0.8% I=1.0%) P=90.4% R=90.4% F1=90.4%
+  --- Beam W=10 ---
+    WER=10.33% (S=8.6% D=0.8% I=1.0%) P=90.5% R=90.6% F1=90.6%
+  --- Beam+ELM (a=8.0) ---
+    WER=9.46% (S=7.8% D=0.7% I=0.9%) P=91.3% R=91.5% F1=91.4%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                    10.51%  90.4%  90.4%  90.4%
+  Beam W=10                            10.33%  90.5%  90.6%  90.6%
+  Beam+ELM (a=8.0)                      9.46%  91.3%  91.5%  91.4%
+==========================================================================================
+
+======================================================================
+  Full Evaluation: test-other
+======================================================================
+  2939 utterances.
+
+  --- Greedy (baseline) ---
+    WER=24.13% (S=20.0% D=2.2% I=1.9%) P=78.0% R=77.8% F1=77.9%
+  --- Beam W=10 ---
+    WER=23.86% (S=19.8% D=2.1% I=2.0%) P=78.2% R=78.1% F1=78.2%
+  --- Beam+ELM (a=8.0) ---
+    WER=22.70% (S=18.7% D=2.0% I=2.0%) P=79.3% R=79.3% F1=79.3%
+
+==========================================================================================
+  Mode                                    WER      P      R     F1
+  ----------------------------------- ------- ------ ------ ------
+  Greedy (baseline)                    24.13%  78.0%  77.8%  77.9%
+  Beam W=10                            23.86%  78.2%  78.1%  78.2%
+  Beam+ELM (a=8.0)                     22.70%  79.3%  79.3%  79.3%
+==========================================================================================
+
+Results: ilme_mamba_results_p52_mamba3_960h_enc_mamba1-elm_eval_a8/
+(.venv) coder@coder-roberh18-h100roberh-567d979d86-22hwt:~/IKT590_Masters_thesis$ 
+
+
+
+
+"
