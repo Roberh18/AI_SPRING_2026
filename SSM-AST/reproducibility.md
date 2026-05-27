@@ -8,7 +8,7 @@ This document explains what can be reproduced from the repository, what requires
 
 Smoke tests verify that the scripts import correctly, the dataset layout is valid, and small training/evaluation paths run without crashing.
 
-These tests do not reproduce thesis WER values.
+These tests do not reproduce the experiments and thesis WER values.
 
 Recommended smoke tests:
 
@@ -34,7 +34,6 @@ python scripts/IKT590_train_LM_char_ngram.py \
 
 ### 2. Evaluation reproducibility with provided checkpoints
 
-This is the expected examiner path.
 
 Given the saved LibriSpeech datasets and the required encoder/LM checkpoints, the final evaluation can be reproduced by running the evaluation script with the same checkpoint paths, beam width, and shallow-fusion weights used in the thesis.
 
@@ -46,13 +45,13 @@ python scripts/IKT590_evaluate_ASR_pipeline.py \
   --asr-type sssm \
   --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 \
   --alpha <ALPHA> \
-  --beta <BETA> \
+  --beta 0
   --beam-width 10 \
   --batch-size 64 \
   --exp-name final_ssssm_charmamba1_eval
 ```
 
-If the tuned `alpha` and `beta` values are not known, run:
+If the tuned `alpha` values are not known, run:
 
 ```bash
 python scripts/IKT590_evaluate_ASR_pipeline.py \
@@ -77,12 +76,12 @@ The full 960 h S-SSSM training command is:
 python scripts/IKT590_train_ASR_encoder_SSSM.py \
   --data-path hub_data/librispeech \
   --dataset-config 960h \
-  --d-model 384 \
-  --n-layers 60 \
+  --d-model 320 \
+  --n-layers 48 \
   --batch-size 64 \
   --seed 456 \
   --epochs 50 \
-  --exp-name ssssm_960h
+  --exp-name ssssm_960h_W-320_D-46_B-128_E-50
 ```
 
 ## Software assumptions
