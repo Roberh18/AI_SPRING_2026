@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 CharMamba3LM: Character-level Mamba-3 Language Model for ASR Rescoring (v1.2-A100)
 
@@ -7,7 +6,6 @@ comparison against the existing Mamba-1 CharMambaLM (d=320, L=18, 12.2M params).
 
 v1.2-A100: Uses official mamba_ssm Triton kernels (requires sm_75+ GPU).
   Optimized for A100/H100. NOT compatible with V100 (sm_70).
-  For V100, use v1.2 (mamba3-minimal pure PyTorch variant).
 
 Key Mamba-3 improvements over Mamba-1:
   - Complex-valued SSM with RoPE embeddings
@@ -27,25 +25,26 @@ Usage:
   TORCH_CUDA_ARCH_LIST="8.0" pip install --force-reinstall --no-deps \
     git+https://github.com/state-spaces/mamba.git --no-build-isolation --break-system-packages
 
-  # Step 1: Verify - (done)
-  python IKT590_train_CharMamba-3_LM_Triton_v1_0.py --mode verify
+  # Step 1: Verify Mamba-3 availability and GPU compatibility
+  python IKT590_train_LM_CharMamba-3_Triton.py --mode verify
 
-  # Step 2: Train (matched to Mamba-1 comparison: same data, similar param count) - (done)
-  python IKT590_train_CharMamba-3_LM_Triton_v1_0.py --mode train \
+  # Step 2: Train (matched to Mamba-1 comparison: same data, similar param count)
+  python IKT590_train_LM_CharMamba-3_Triton.py --mode train \
     --lm-hf-dataset openslr/librispeech_lm \
     --d-model 320 --n-layers 18 --d-state 64 --headdim 64 \
     --epochs 20 --batch-size 64 --accum-steps 2 --max-chars 1000000000
 
-    # Step 2: Train (matched to Mamba-1 comparison: same data, similar param count) - (ToDo)
-  python IKT590_train_CharMamba-3_LM_Triton_v1_0.py --mode train \
-    --lm-hf-dataset openslr/librispeech_lm \
-    --d-model 320 --n-layers 18 --d-state 16 --headdim 64 \
-    --epochs 20 --batch-size 64 --accum-steps 2 --max-chars 1000000000
+  # Step 3: Evaluate with existing ASR pipeline (see the ASR evaluation script)
+  #   --elm-path lm_checkpoints/elm_mamba3_MaxChars-1000000000_d320_L18/
 
-  # Step 3: Evaluate with existing pipeline
-  python IKT464_Script_ASR_SSSM_CharMambaLM_v1_3.py --mode tune \
-    --elm-path lm_checkpoints/elm_mamba3_MaxChars-1000000000_d320_L18/ \
-    ... (same args as Mamba-1 experiments)
+Outputs (saved to lm_checkpoints/elm_mamba3_MaxChars-{N}_d{D}_L{L}/):
+  elm_best.pt        - Best checkpoint (model_state_dict + config + hparams)
+  elm_hparams.json   - Full hyperparameter record
+  elm_history.json   - Per-epoch train/val loss and PPL
+  elm_training.log   - Training log
+  plot_loss.pdf      - Training curves (requires matplotlib)
+  plot_ppl.pdf       - Perplexity curves
+  plot_gap.pdf       - Generalization gap
 """
 
 import argparse
@@ -82,13 +81,6 @@ except ImportError as e:
     print(f"  Install from GitHub:")
     print(f'  TORCH_CUDA_ARCH_LIST="8.0" pip install --force-reinstall --no-deps \\')
     print(f"    git+https://github.com/state-spaces/mamba.git --no-build-isolation --break-system-packages")
-
-# Also check Mamba-1 for reference
-try:
-    from mamba_ssm import Mamba as Mamba1
-    _HAS_MAMBA1 = True
-except ImportError:
-    _HAS_MAMBA1 = False
 
 try:
     from datasets import load_dataset
@@ -707,9 +699,9 @@ def generate_training_plots(history, save_dir, hparams):
 def load_mamba3_lm(path, device='cuda'):
     """Load a trained CharMamba3LM checkpoint.
     
-    To integrate with the main script's load_lm(), add this to load_lm():
+    To integrate with the ASR evaluation script's load_lm(), add:
         if cfg['model_type'] == 'mamba3':
-            from IKT590_train_charmamba3 import CharMamba3LM
+            from <this_module> import CharMamba3LM
             model = CharMamba3LM(...)
     """
     if os.path.isdir(path):
@@ -912,10 +904,10 @@ def main():
                 accum_steps=args.accum_steps, lr=args.lr,
                 label_smoothing=args.label_smoothing)
     
-    print(f"\n  To use with the main evaluation script, update load_lm() in")
-    print(f"  IKT464_Script_ASR_SSSM_CharMambaLM_v1_3.py to handle model_type='mamba3':")
+    # Integration hint for the ASR evaluation script
+    print(f"\n  To use with the ASR evaluation script, update load_lm() to handle model_type='mamba3':")
     print(f"    elif cfg['model_type'] == 'mamba3':")
-    print(f"        from IKT590_train_charmamba3 import CharMamba3LM")
+    print(f"        from {os.path.splitext(os.path.basename(__file__))[0]} import CharMamba3LM")
     print(f"        model = CharMamba3LM(...)")
     print(f"\n  Then run: --elm-path {save_dir}")
 
