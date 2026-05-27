@@ -1,31 +1,63 @@
 """
-SSM-ASR: Hierarchical States + Gating
-===============================================================
+Train S-SSSM (Selective Structured State Space Model) CTC encoder for ASR.
 
-EXPERIMENTS: Architecture ablation
+Implements an SSM encoder with non-uniform layer-wise initialization of
+decay/timescale parameters and optional gating for CTC-based automatic
+speech recognition on LibriSpeech. The non-uniform schedule assigns
+different initial bias values (a0, b0, c0) per layer, providing
+initialization diversity across the encoder stack. Supports configurable
+training subsets (100h/460h/500h/600h/960h), ablation controls for which
+parameters receive non-uniform init (--hier-params a/b/c/ab/abc/...),
+and optional layer-freeze scheduling.
 
-    # Exp01: Baseline 336 x 12 (8.56M Params)
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --no-hierarchical --no-gating --exp-name baseline_W336_D12 --seed 456 --d-model 336 --n-layers 12 --epochs 30
-    
-    # Exp02: Baseline 336 x 12 + Hierarchical (8.56M Params)
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --no-gating --exp-name hier_W336_D12 --seed 456 --d-model 336 --n-layers 12 --epochs 30
+Note on naming: CLI flags and config keys use the legacy name
+"hierarchical" (e.g. --no-hierarchical, use_hierarchical, HIER_CONFIG)
+for checkpoint compatibility. The thesis interprets the mechanism as
+non-uniform layer-wise initialization / initialization diversity, not
+as a proven acoustic-to-linguistic hierarchy.
 
-    # Exp03: Baseline 312 x 12 + Gating (8.56M Params)
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --no-hierarchical --exp-name gating_W312_D12 --seed 456 --d-model 312 --n-layers 12 --epochs 30
+Author: Robert Hansen
+Course: IKT590 - Master's Thesis
 
-    # Exp04: Baseline 312 x 12 + Gating + Hierarchical (8.56M Params)
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --exp-name hier_gating_W312_D12 --seed 456 --d-model 312 --n-layers 12 --epochs 30
+Requirements:
+    pip install torch torchaudio lightning matplotlib numpy pandas jiwer datasets
 
+Expected data layout (HuggingFace datasets saved to disk):
+    hub_data/librispeech/clean/   (train.100, train.360, validation, test)
+    hub_data/librispeech/other/   (train.500, validation, test)
 
-# Quick test run
-    IKT464_AST_SSSSM.py --data-path ../hub_data/librispeech --exp-name hier_gating_TEST --seed 456 --subset-train 4000 --subset-val 400 --batch-size 16 --d-model 64 --n-layers 6 --epochs 5
-    
+Usage examples:
+
+    # Quick smoke test
+    python train_ASR_encoder_SSSM.py --data-path hub_data/librispeech \\
+        --subset-train 4000 --subset-val 400 --batch-size 16 \\
+        --d-model 64 --n-layers 6 --epochs 5 --exp-name smoke_test
+
+    # 100h baseline (uniform init, no gating)
+    python train_ASR_encoder_SSSM.py --data-path hub_data/librispeech \\
+        --dataset-config 100h --no-hierarchical --no-gating \\
+        --d-model 200 --n-layers 24 --batch-size 64 --seed 456 --epochs 30
+
+    # 960h full S-SSSM (non-uniform init + gating)
+    python train_ASR_encoder_SSSM.py --data-path hub_data/librispeech \\
+        --dataset-config 960h --d-model 384 --n-layers 60 \\
+        --batch-size 64 --seed 456 --epochs 50
+
+    # Non-uniform init ablation (A-parameter only)
+    python train_ASR_encoder_SSSM.py --data-path hub_data/librispeech \\
+        --dataset-config 100h --hier-params a --d-model 200 --n-layers 24 \\
+        --batch-size 64 --seed 456 --epochs 30
 """
+
+
+# ============================================================================
+# IMPORTS
+# ============================================================================
 
 from __future__ import annotations
 
+# Standard library imports
 import argparse
-import glob
 import json
 import math
 import os
@@ -40,6 +72,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Third-party library imports
 import lightning as L
 import matplotlib.pyplot as plt
 import numpy as np
@@ -53,15 +86,23 @@ from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
 from torch.utils.data import DataLoader, Dataset
 
+# Optional dependency (check dataset availability)
 try:
     from datasets import load_from_disk, concatenate_datasets
     _HAS_HF = True
 except ImportError:
     _HAS_HF = False
 
+# Suppress PyTorch Lightning's TF32 deprecation warning
 warnings.filterwarnings('ignore', category=UserWarning, message='.*Please use the new API settings to control TF32.*')
+
+# Suppress the "Checkpoint directory exists" warning 
 warnings.filterwarnings('ignore', category=UserWarning, message='Checkpoint directory .* exists and is not empty.')
 
+
+# ============================================================================
+# LOGGING SETUP
+# ============================================================================
 
 def setup_logging(log_file: str, level=logging.INFO):
     """
@@ -100,6 +141,7 @@ def logged_print(*args, **kwargs):
     """
     logger = logging.getLogger('ASR_Training')
     
+    # If logger has no handlers yet, fall back to original print
     if not logger.handlers:
         _original_print(*args, **kwargs)
         return
@@ -107,10 +149,12 @@ def logged_print(*args, **kwargs):
     message = ' '.join(str(arg) for arg in args)
     end = kwargs.get('end', '\n')
     
+    # Handle progress bar updates (carriage return) - terminal only
     if '\r' in message or (end != '\n' and end != ''):
         _original_print(*args, **kwargs)
         return
     
+    # Log normal messages
     if message.strip():
         logger.info(message)
     elif end == '\n':
@@ -124,15 +168,21 @@ def override_print_with_logger():
     """
     import builtins
     builtins.print = logged_print
+    
 
+# ============================================================================
+# SYSTEM SETUP
+# ============================================================================
 
 print("\n")
-print("SSM-ASR: HIERARCHICAL STATES + GATING")
+print("SSM-ASR: NON-UNIFORM INIT + GATING")
 print("\n")
 
 if torch.cuda.is_available():
-    torch.backends.cudnn.conv.fp32_precision = 'tf32'
-    torch.backends.cuda.matmul.fp32_precision = 'tf32'
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    if hasattr(torch.backends.cudnn, "conv") and hasattr(torch.backends.cudnn.conv, "fp32_precision"):
+        torch.backends.cudnn.conv.fp32_precision = "tf32"
     device_name = torch.cuda.get_device_name(0)
     memory_gb = torch.cuda.get_device_properties(0).total_memory / 1024 ** 3
     print(f"GPU: {device_name}")
@@ -140,6 +190,11 @@ if torch.cuda.is_available():
     print("Compute: TF32 enabled")
 else:
     print("WARNING: Running on CPU - training will be very slow")
+
+
+# ============================================================================
+# VOCABULARY & CONSTANTS
+# ============================================================================
 
 VOCAB_CHARS = list(" 'abcdefghijklmnopqrstuvwxyz")
 BLANK_TOKEN = len(VOCAB_CHARS)
@@ -164,6 +219,10 @@ def ids_to_text(ids: List[int]) -> str:
     return "".join(IDX_TO_CHAR[i] for i in ids if i in IDX_TO_CHAR)
 
 
+# ============================================================================
+# AUDIO FEATURE EXTRACTION (FROM v4.0)
+# ============================================================================
+
 _mel_transform = torchaudio.transforms.MelSpectrogram(
     sample_rate=SAMPLE_RATE,
     n_fft=400,
@@ -181,23 +240,28 @@ _amp_to_db = torchaudio.transforms.AmplitudeToDB(stype="power", top_db=80.0)
 def extract_features(
     waveform: torch.Tensor,
     sample_rate: int,
-    apply_speed_perturb: bool=False,
-    speed_perturb_factors: Tuple[float, ...]=(0.9, 1.0, 1.1)
+    apply_speed_perturb: bool = False,
+    speed_perturb_factors: Tuple[float, ...] = (0.9, 1.0, 1.1)
 ) -> torch.Tensor:
     """
     Extract log mel-spectrogram features with optional speed perturbation.
     """
+    # Resample if needed
     if sample_rate != SAMPLE_RATE:
         waveform = torchaudio.functional.resample(waveform, sample_rate, SAMPLE_RATE)
+    
+    # Convert to mono
     if waveform.ndim > 1:
         waveform = waveform.mean(dim=0, keepdim=True)
     elif waveform.ndim == 1:
         waveform = waveform.unsqueeze(0)
     
+    # Apply speed perturbation (training only)
     if apply_speed_perturb:
         speed_factor = random.choice(speed_perturb_factors)
         waveform = apply_speed_perturbation(waveform, SAMPLE_RATE, speed_factor)
     
+    # Extract features (v4.0 stable approach)
     with torch.no_grad():
         mel_spec = _mel_transform(waveform)
         log_mel = _amp_to_db(mel_spec)
@@ -211,7 +275,7 @@ def extract_features(
 def apply_speed_perturbation(
     waveform: torch.Tensor,
     sample_rate: int,
-    speed_factor: float=1.0
+    speed_factor: float = 1.0
 ) -> torch.Tensor:
     """
     Apply speed perturbation to waveform.
@@ -242,10 +306,10 @@ class SpecAugment(nn.Module):
     
     def __init__(
         self,
-        freq_mask_param: int=15,
-        time_mask_param: int=50,
-        n_freq_masks: int=2,
-        n_time_masks: int=2,
+        freq_mask_param: int = 15,
+        time_mask_param: int = 50,
+        n_freq_masks: int = 2,
+        n_time_masks: int = 2,
     ):
         super().__init__()
         self.freq_mask = torchaudio.transforms.FrequencyMasking(freq_mask_param)
@@ -270,17 +334,21 @@ class SpecAugment(nn.Module):
         return x.transpose(1, 2)
 
 
+# ============================================================================
+# DATASET & DATALOADER (FROM v4.0)
+# ============================================================================
+
 class LibriSpeechDataset(Dataset):
     """Lazy-loading LibriSpeech dataset."""
 
     def __init__(
             self,
             hf_dataset,
-            subset: Optional[int]=None,
-            split_name: str="",
-            use_specaugment: bool=False,
-            use_speed_perturb: bool=False,
-            speed_perturb_factors: Tuple[float, ...]=(0.9, 1.0, 1.1),
+            subset: Optional[int] = None,
+            split_name: str = "",
+            use_specaugment: bool = False,
+            use_speed_perturb: bool = False,
+            speed_perturb_factors: Tuple[float, ...] = (0.9, 1.0, 1.1),
         ):
         self.split_name = split_name
         self.use_speed_perturb = use_speed_perturb 
@@ -296,6 +364,7 @@ class LibriSpeechDataset(Dataset):
         print(f"  Size: {len(self.dataset)} examples")
         print(f"  Mode: LAZY LOADING (memory efficient)")
 
+        # Initialize SpecAugment
         self.use_specaugment = use_specaugment
         if self.use_specaugment:
             print(f"  SpecAugment: ENABLED (Applied before padding)")
@@ -310,7 +379,7 @@ class LibriSpeechDataset(Dataset):
             print(f"  Speed perturbation: DISABLED")  
 
         sample_size = min(1000, len(self.dataset))
-        sample_indices = np.linspace(0, len(self.dataset) - 1, sample_size, dtype=int)
+        sample_indices = np.linspace(0, len(self.dataset)-1, sample_size, dtype=int)
         
         audio_lengths = []
         text_lengths = []
@@ -328,6 +397,7 @@ class LibriSpeechDataset(Dataset):
               f"mean={np.mean(audio_lengths)/SAMPLE_RATE:.1f}s")
         print(f"  Text length: min={min(text_lengths)}, max={max(text_lengths)}, "
               f"mean={np.mean(text_lengths):.1f}")
+
     
     def __len__(self):
         return len(self.dataset)
@@ -343,7 +413,9 @@ class LibriSpeechDataset(Dataset):
             apply_speed_perturb=self.use_speed_perturb,
             speed_perturb_factors=self.speed_perturb_factors
         )
-    
+        
+        # NEW: Apply SpecAugment here (before padding!)
+        # Features shape is [Time, Freq]. Transforms expect [..., Freq, Time]
         if self.use_specaugment:
             # Transpose to [Freq, Time] for torchaudio
             features_t = features.transpose(0, 1)
@@ -369,7 +441,7 @@ def collate_fn(batch):
     features_padded = torch.zeros(len(batch), max_len, n_mels)
     
     for i, f in enumerate(features):
-        features_padded[i,:f.shape[0],:] = f
+        features_padded[i, :f.shape[0], :] = f
     
     text_ids = [torch.LongTensor(text_to_ids(t)) for t in texts]
     text_lengths = torch.LongTensor([len(t) for t in text_ids])
@@ -383,7 +455,7 @@ def collate_fn(batch):
     
     for i, t in enumerate(text_ids):
         if len(t) > 0:
-            text_ids_padded[i,:len(t)] = t
+            text_ids_padded[i, :len(t)] = t
     
     return {
         'features': features_padded,
@@ -394,10 +466,14 @@ def collate_fn(batch):
     }
 
 
+# ============================================================================
+# MODEL ARCHITECTURE
+# ============================================================================
+
 class ConvSubsample(nn.Module):
     """4x subsampling via two strided convolutions (from v4.0)."""
     
-    def __init__(self, in_channels: int=80, out_channels: int=256):
+    def __init__(self, in_channels: int = 80, out_channels: int = 256):
         super().__init__()
         self.conv1 = nn.Conv1d(in_channels, out_channels // 2, kernel_size=5, stride=2, padding=2)
         self.conv2 = nn.Conv1d(out_channels // 2, out_channels, kernel_size=5, stride=2, padding=2)
@@ -420,24 +496,32 @@ class ConvSubsample(nn.Module):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = x.transpose(1, 2)
-        lengths = torch.div(lengths, 4, rounding_mode="floor")
+        # Exact output length for Conv1d: floor((L + 2*padding - kernel_size) / stride) + 1
+        # With kernel_size=5, stride=2, padding=2: floor((L + 4 - 5) / 2) + 1 = floor((L - 1) / 2) + 1
+        lengths = torch.div(lengths + 2 * 2 - 5, 2, rounding_mode="floor") + 1  # After conv1
+        lengths = torch.div(lengths + 2 * 2 - 5, 2, rounding_mode="floor") + 1  # After conv2
         return x, lengths
 
 
 class HierarchicalSelectiveSSMLayer(nn.Module):
     """
-    Selective SSM Layer with Hierarchical State Dynamics and Optional Gating.
+    Selective SSM Layer with non-uniform layer-wise initialization and optional gating.
+
+    Class name kept as HierarchicalSelectiveSSMLayer for checkpoint compatibility.
+    The "hierarchical" init applies a forward non-uniform schedule to a0/b0/c0 bias
+    vectors across layers, providing initialization diversity (not a proven hierarchy).
     """
     
     def __init__(
         self,
         d_model: int,
-        dropout: float=0.1,
-        layer_idx: int=0,
-        n_layers: int=1,
-        use_hierarchical: bool=True,
-        use_gating: bool=True,
-        enable_diagnostics: bool=False,
+        dropout: float = 0.1,
+        layer_idx: int = 0,
+        n_layers: int = 1,
+        use_hierarchical: bool = True,
+        use_gating: bool = True,
+        enable_diagnostics: bool = False,
+        hier_params: str = 'abc',
     ):
         super().__init__()
         self.d_model = d_model
@@ -482,53 +566,55 @@ class HierarchicalSelectiveSSMLayer(nn.Module):
         self.c0 = nn.Parameter(torch.zeros(d_model))
         self.d0 = nn.Parameter(torch.zeros(d_model))
 
-        # Hierarchical initialization
+        # Non-uniform layer-wise initialization (legacy name: "hierarchical")
         if use_hierarchical:
             with torch.no_grad():
                 # Compute layer position (0.0 = early, 1.0 = late)
                 # Safe division even if n_layers=1
                 denom = max(1, n_layers - 1)
                 layer_progress = layer_idx / denom
+
+                if HIER_MODE == 'random':
+                    a_mean = random.uniform(0.15, 0.85) if 'a' in hier_params else None
+                    b_mean = random.uniform(0.12, 0.35) if 'b' in hier_params else None
+                    c_mean = random.uniform(-0.35, 0.20) if 'c' in hier_params else None
+                else:
+                    hc = HIER_CONFIG
+                    # Each param: forward non-uniform schedule if selected, else None (stays at default zeros)
+                    a_mean = hc['A0_EARLY'] * ((hc['A0_LATE'] / hc['A0_EARLY']) ** layer_progress) if 'a' in hier_params else None
+                    b_mean = hc['B0_EARLY'] * ((hc['B0_LATE'] / hc['B0_EARLY']) ** layer_progress) if 'b' in hier_params else None
+                    c_mean = (hc['C0_EARLY'] + (hc['C0_LATE'] - hc['C0_EARLY']) * layer_progress) if 'c' in hier_params else None
                 
-                # Load constants
-                hc = HIER_CONFIG
+                # Only override params that are in hier_params.
+                # Others stay at torch.zeros(d_model) from line 598-600.
+                if a_mean is not None:
+                    a_init = torch.normal(mean=a_mean, std=0.08, size=(d_model,))
+                    self.a0.copy_(torch.clamp(a_init, -0.95, 0.95))
                 
-                # a0: Exponential decay schedule
-                a_mean = hc['A0_EARLY'] * ((hc['A0_LATE'] / hc['A0_EARLY']) ** layer_progress)
+                if b_mean is not None:
+                    b_init = torch.normal(mean=b_mean, std=0.05, size=(d_model,))
+                    self.b0.copy_(torch.clamp(b_init, 0.01, 0.95))
                 
-                # b0: Exponential decay schedule
-                b_mean = hc['B0_EARLY'] * ((hc['B0_LATE'] / hc['B0_EARLY']) ** layer_progress)
-                
-                # c0: Linear schedule
-                c_mean = hc['C0_EARLY'] + (hc['C0_LATE'] - hc['C0_EARLY']) * layer_progress
-                
-                # Initialization with random variance
-                a_init = torch.normal(mean=a_mean, std=0.08, size=(d_model,))
-                self.a0.copy_(torch.clamp(a_init, -0.95, 0.95))
-                
-                b_init = torch.normal(mean=b_mean, std=0.05, size=(d_model,))
-                self.b0.copy_(torch.clamp(b_init, 0.01, 0.95))
-                
-                c_init = torch.normal(mean=c_mean, std=0.05, size=(d_model,))
-                self.c0.copy_(torch.clamp(c_init, -0.95, 0.95))
-                
+                if c_mean is not None:
+                    c_init = torch.normal(mean=c_mean, std=0.05, size=(d_model,))
+                    self.c0.copy_(torch.clamp(c_init, -0.95, 0.95))
                 # d0: Skip connection
                 self.d0.copy_(torch.normal(0.0, std=0.02, size=(d_model,)))
                 
-                # Determine Layer Type dynamically based on progress
+                # Positional label for logging (describes schedule position, not learned function)
                 if layer_progress < 0.33:
-                    layer_type = "acoustic"
+                    layer_type = "early"
                 elif layer_progress < 0.66:
-                    layer_type = "phonetic"
+                    layer_type = "mid"
                 else:
-                    layer_type = "linguistic"
+                    layer_type = "late"
                 
                 self.layer_type = layer_type
                 
                 # Logging actual values
-                a_str = f"{self.a0.mean():.3f}±{self.a0.std():.3f}"
-                b_str = f"{self.b0.mean():.3f}±{self.b0.std():.3f}"
-                c_str = f"{self.c0.mean():.3f}±{self.c0.std():.3f}"
+                a_str = f"{self.a0.mean():.3f}±{self.a0.std():.3f}" if 'a' in hier_params else "uniform"
+                b_str = f"{self.b0.mean():.3f}±{self.b0.std():.3f}" if 'b' in hier_params else "uniform"
+                c_str = f"{self.c0.mean():.3f}±{self.c0.std():.3f}" if 'c' in hier_params else "uniform"
                 print(f"  {layer_idx:<6} {layer_type:<11} {a_str:<20} {b_str:<20} {c_str:<20}")
                 
                 # Store for diagnostics
@@ -566,7 +652,14 @@ class HierarchicalSelectiveSSMLayer(nn.Module):
                 json.dump(summary, f, indent=2)
             print(f"Saved diagnostics for layer {self.layer_idx} to {filepath}")
     
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, pad_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        """
+        Args:
+            x: [batch, time, d_model]
+            pad_mask: Optional [batch, time, 1] float mask (1.0 = valid, 0.0 = padded).
+                      When provided, zeroes out padded positions after the layer
+                      to prevent padding leakage through dwconv across layers.
+        """
         B, T, D = x.shape
         
         x_norm = self.norm(x)
@@ -590,9 +683,9 @@ class HierarchicalSelectiveSSMLayer(nn.Module):
         ys = []
         
         for t in range(T):
-            xt = x_proj[:, t,:]
-            s = at[:, t,:] * s + bt[:, t,:] * xt
-            yt = ct[:, t,:] * s + dt[:, t,:] * xt
+            xt = x_proj[:, t, :]
+            s = at[:, t, :] * s + bt[:, t, :] * xt
+            yt = ct[:, t, :] * s + dt[:, t, :] * xt
             ys.append(yt)
         
         y = torch.stack(ys, dim=1)
@@ -616,46 +709,55 @@ class HierarchicalSelectiveSSMLayer(nn.Module):
             y = y * gate
         
         y = self.out_proj(y)
-        return x + self.dropout(y)
+        out = x + self.dropout(y)
+        
+        # Zero out padded positions to prevent leakage into next layer's dwconv
+        if pad_mask is not None:
+            out = out * pad_mask
+        
+        return out
 
 
 class SSMEncoder(nn.Module):
     """Stack of SSM layers."""
     
     def __init__(
-        self,
-        d_model: int=256,
-        n_layers: int=6,
-        dropout: float=0.1,
-        use_hierarchical: bool=True,
-        use_gating: bool=True,
-        enable_diagnostics: bool=False,
+        self, 
+        d_model: int = 256, 
+        n_layers: int = 6, 
+        dropout: float = 0.1,
+        use_hierarchical: bool = True,
+        use_gating: bool = True,  
+        enable_diagnostics: bool = False,
+        hier_params: str = 'abc',
     ):
         super().__init__()
 
-        print(f"\nSSM Encoder Configuration: d_model={d_model}, layers={n_layers}, " 
-              f"hierarchical={use_hierarchical}, gating={use_gating}")
+
+        print(f"\nSSM Encoder Configuration: d_model={d_model}, layers={n_layers}, "
+              f"non_uniform_init={use_hierarchical}, gating={use_gating}, hier_params={hier_params}")
         
         if use_hierarchical:
             # Calculate dynamic preview values based on config
             hc = HIER_CONFIG
-            
             # Calculate theoretical mean 'a' (tanh of parameter) for display
             # Note: tanh(0.85) = 0.69, tanh(0.15) = 0.15
+            # We show the raw parameter value to match the table below
             a_early = hc['A0_EARLY']
             a_mid = hc['A0_EARLY'] * ((hc['A0_LATE'] / hc['A0_EARLY']) ** 0.5)
             a_late = hc['A0_LATE']
 
-            print(f"\nHierarchical dynamics (Target Means):")
-            print(f"   Early (Acoustic):   a0≈{a_early:.2f} (Fast decay / High Plasticity)")
-            print(f"   Mid   (Phonetic):   a0≈{a_mid:.2f} (Medium decay)")
-            print(f"   Late  (Linguistic): a0≈{a_late:.2f} (Slow decay / High Stability)\n")
+            print(f"\nNon-uniform init schedule (Target Means):")
+            print(f"   Early layers: a0≈{a_early:.2f} (Fast decay / High Plasticity)")
+            print(f"   Mid layers:   a0≈{a_mid:.2f} (Medium decay)")
+            print(f"   Late layers:  a0≈{a_late:.2f} (Slow decay / High Stability)\n")
+            print(f"   Non-uniform params: {hier_params.upper()}\n")
             
             print(f"  {'Layer':<6} {'Type':<11} {'a0 (mean±std)':<20} {'b0 (mean±std)':<20} {'c0 (mean±std)':<20}")
             print(f"  {'-'*6} {'-'*11} {'-'*20} {'-'*20} {'-'*20}")
         else:
-            print(f"\nUniform State Dynamics:")
-            print(f"  All layers: Standard initialization")
+            print(f"\nUniform Init:")
+            print(f"  All layers: Standard initialization (zeros)")
         
         self.layers = nn.ModuleList([
             HierarchicalSelectiveSSMLayer(
@@ -666,15 +768,27 @@ class SSMEncoder(nn.Module):
                 use_hierarchical=use_hierarchical,
                 use_gating=use_gating,
                 enable_diagnostics=enable_diagnostics,
+                hier_params=hier_params,
             )
             for i in range(n_layers)
         ])
         self.final_norm = nn.LayerNorm(d_model)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
+        # Create padding mask if lengths are provided: [B, T, 1] float mask
+        pad_mask = None
+        if lengths is not None:
+            B, T, _ = x.shape
+            # Create [B, T] boolean mask, then unsqueeze to [B, T, 1] for broadcasting
+            arange = torch.arange(T, device=x.device).unsqueeze(0)  # [1, T]
+            pad_mask = (arange < lengths.unsqueeze(1)).unsqueeze(2).float()  # [B, T, 1]
+            # Zero out any initial padding in x (shouldn't exist, but defensive)
+            x = x * pad_mask
+        
         for layer in self.layers:
-            x = layer(x)
+            x = layer(x, pad_mask=pad_mask)
         return self.final_norm(x)
+
 
 
 class ASRModel(nn.Module):
@@ -683,12 +797,13 @@ class ASRModel(nn.Module):
     def __init__(
         self,
         n_classes: int,
-        d_model: int=256,
-        n_layers: int=6,
-        dropout: float=0.1,
-        use_hierarchical: bool=True,
-        use_gating: bool=True,
-        enable_diagnostics: bool=False,
+        d_model: int = 256,
+        n_layers: int = 6,
+        dropout: float = 0.1,
+        use_hierarchical: bool = True,
+        use_gating: bool = True,
+        enable_diagnostics: bool = False,
+        hier_params: str = 'abc',
     ):
         super().__init__()
         
@@ -702,7 +817,8 @@ class ASRModel(nn.Module):
             dropout=dropout,
             use_hierarchical=use_hierarchical,
             use_gating=use_gating,
-            enable_diagnostics=enable_diagnostics
+            enable_diagnostics=enable_diagnostics,
+            hier_params=hier_params,
         )
         
         # Output head
@@ -733,14 +849,18 @@ class ASRModel(nn.Module):
         # Subsample
         x, lengths = self.subsample(features, feature_lengths)
         
-        # Encode
-        x = self.encoder(x)
+        # Encode (pass lengths for padding mask)
+        x = self.encoder(x, lengths=lengths)
         
         # Classify
         logits = self.output_head(x)
         
         return logits, lengths
 
+
+# ============================================================================
+# DECODING
+# ============================================================================
 
 def ctc_greedy_decode(
     logits: torch.Tensor,
@@ -767,21 +887,26 @@ def ctc_greedy_decode(
     return hyps
 
 
+# ============================================================================
+# LIGHTNING MODULE
+# ============================================================================
+
 class LitASR(L.LightningModule):
     """Lightning module for training."""
     
     def __init__(
         self,
-        d_model: int=256,
-        n_layers: int=6,
-        dropout: float=0.1,
-        learning_rate: float=1e-3,
-        warmup_steps: int=500,
-        weight_decay: float=0.05,
-        use_speed_perturb: bool=False,
-        use_hierarchical: bool=True,
-        use_gating: bool=True,
-        enable_diagnostics: bool=False,
+        d_model: int = 256,
+        n_layers: int = 6,
+        dropout: float = 0.1,
+        learning_rate: float = 1e-3,
+        warmup_steps: int = 500,
+        weight_decay: float = 0.05,
+        use_speed_perturb: bool = False,
+        use_hierarchical: bool = True,
+        use_gating: bool = True,
+        enable_diagnostics: bool = False,
+        hier_params: str = 'abc',
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -801,6 +926,7 @@ class LitASR(L.LightningModule):
             use_hierarchical=use_hierarchical,
             use_gating=use_gating,
             enable_diagnostics=enable_diagnostics,
+            hier_params=hier_params,
         )
         
         # Loss
@@ -829,7 +955,7 @@ class LitASR(L.LightningModule):
         
         # Flatten targets for CTC
         targets = torch.cat([
-            text_ids[i,:text_lengths[i]]
+            text_ids[i, :text_lengths[i]]
             for i in range(text_ids.size(0))
         ]).long()
         
@@ -845,11 +971,11 @@ class LitASR(L.LightningModule):
 
         batch_size = features.shape[0]
         self.log(
-            'train_loss',
-            loss,
-            prog_bar=True,
-            on_step=True,
-            on_epoch=True,
+            'train_loss', 
+            loss, 
+            prog_bar=True, 
+            on_step=True, 
+            on_epoch=True, 
             batch_size=batch_size
         )
         self.train_step_outputs.append(loss.detach())
@@ -860,7 +986,7 @@ class LitASR(L.LightningModule):
         if torch.cuda.is_available():
             # Get peak memory since last reset
             peak_memory = torch.cuda.max_memory_allocated(0) / (1024 ** 3)
-            self.log('gpu_memory_peak_gb', peak_memory, on_epoch=True,
+            self.log('gpu_memory_peak_gb', peak_memory, on_epoch=True, 
                     prog_bar=False, logger=True, sync_dist=True)
             # Reset peak memory tracker for next epoch
             torch.cuda.reset_peak_memory_stats(0)
@@ -883,7 +1009,7 @@ class LitASR(L.LightningModule):
         # Calculate loss
         log_probs = F.log_softmax(logits, dim=-1).transpose(0, 1)
         targets = torch.cat([
-            text_ids[i,:text_lengths[i]] for i in range(text_ids.size(0))
+            text_ids[i, :text_lengths[i]] for i in range(text_ids.size(0))
         ]).long()
         loss = self.ctc_loss(log_probs, targets, lengths, text_lengths)
         
@@ -893,11 +1019,11 @@ class LitASR(L.LightningModule):
         # WER Calculation
         wers = []
         for i, hyp in enumerate(hyps):
-            ref = ids_to_text(text_ids[i,:text_lengths[i]].tolist())
+            ref = ids_to_text(text_ids[i, :text_lengths[i]].tolist())
             hyp_text = ids_to_text(hyp)
             wers.append(jiwer_wer(ref, hyp_text))
             
-            # Store detailed results 
+            # Store detailed results (Only during validation, Only clean set)
             if prefix == 'val' and dataloader_idx == 0:
                 duration = feature_lengths[i].item() / SAMPLE_RATE 
                 result = {
@@ -910,10 +1036,11 @@ class LitASR(L.LightningModule):
             
         mean_wer = float(np.mean(wers))
         
+        # --- DYNAMIC LOGGING (Uses 'val' or 'test' prefix) ---
         self.log(
-            f'{prefix}_wer_{suffix}',
-            mean_wer,
-            prog_bar=True, on_step=False, on_epoch=True,
+            f'{prefix}_wer_{suffix}', 
+            mean_wer, 
+            prog_bar=True, on_step=False, on_epoch=True, 
             add_dataloader_idx=False, batch_size=batch_size
         )
         
@@ -926,6 +1053,7 @@ class LitASR(L.LightningModule):
         
         return loss
 
+    # --- WRAPPER METHODS ---
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
         return self._shared_eval(batch, batch_idx, dataloader_idx, prefix="val")
 
@@ -989,16 +1117,20 @@ class LitASR(L.LightningModule):
                 'interval': 'step',
             }
         }
+        
 
+
+# ============================================================================
+# CALLBACKS
+# ============================================================================
 
 class HierarchyFreezeCallback(Callback):
     """
-    Scientific Control: Freezes the hierarchical state dynamics (a0, b0)
-    for the first N epochs to force the model to utilize the imposed 
-    time-scale hierarchy, then unfreezes them to allow fine-tuning.
+    Freezes the non-uniform init parameters (a0, b0) for the first N epochs
+    to preserve the initial timescale diversity, then unfreezes for fine-tuning.
+    Class name kept as HierarchyFreezeCallback for compatibility.
     """
-
-    def __init__(self, unfreeze_epoch: int=5):
+    def __init__(self, unfreeze_epoch: int = 5):
         super().__init__()
         self.unfreeze_epoch = unfreeze_epoch
         self.frozen = False
@@ -1021,9 +1153,9 @@ class HierarchyFreezeCallback(Callback):
         # Navigate to the encoders. 
         # Note: Handle both standard and BiDirectional cases
         encoders = []
-        if hasattr(pl_module.model.encoder, 'layers'):  # Standard
+        if hasattr(pl_module.model.encoder, 'layers'): # Standard
             encoders.append(pl_module.model.encoder)
-        elif hasattr(pl_module.model.encoder, 'fwd_encoder'):  # BiDirectional
+        elif hasattr(pl_module.model.encoder, 'fwd_encoder'): # BiDirectional
             encoders.append(pl_module.model.encoder.fwd_encoder)
             encoders.append(pl_module.model.encoder.bwd_encoder)
             
@@ -1043,7 +1175,7 @@ class HierarchyFreezeCallback(Callback):
 class CleanProgressCallback(Callback):
     """Clean progress reporting without special characters."""
     
-    def __init__(self, print_every_n_batches: int=50):
+    def __init__(self, print_every_n_batches: int = 50):
         super().__init__()
         self.print_every_n_batches = print_every_n_batches
         self.epoch_start_time = None
@@ -1130,11 +1262,11 @@ class CleanProgressCallback(Callback):
             print(f"  Current LR:        {current_lr:.6f}")
             if torch.cuda.is_available():
                 # Log and reset peak memory for the plot
-                peak_alloc = torch.cuda.max_memory_allocated() / 1024 ** 3
-                peak_res = torch.cuda.max_memory_reserved() / 1024 ** 3
+                peak_alloc = torch.cuda.max_memory_allocated() / 1024**3
+                peak_res = torch.cuda.max_memory_reserved() / 1024**3
                 self.history['gpu_memory_allocated'].append(peak_alloc)
                 self.history['gpu_memory_reserved'].append(peak_res)
-                torch.cuda.reset_peak_memory_stats(trainer.strategy.root_device)  # Reset for next epoch
+                torch.cuda.reset_peak_memory_stats(trainer.strategy.root_device) # Reset for next epoch
                 print(f"  GPU Memory (Peak): {peak_alloc:.2f} GB")
             
             print(f"{'-'*80}")
@@ -1143,10 +1275,14 @@ class CleanProgressCallback(Callback):
         total_time = time.time() - self.fit_start_time
         total_hours = int(total_time // 3600)
         total_min = int((total_time % 3600) // 60)
+        
 
         print("Training Complete.")
         print(f"Total training time: {total_hours}h {total_min}m")
 
+# ============================================================================
+# VISUALIZATION HELPER
+# ============================================================================
 
 def get_param_counts(model: nn.Module) -> Dict[str, int]:
     """Get parameter counts for visualization."""
@@ -1162,6 +1298,11 @@ def get_param_counts(model: nn.Module) -> Dict[str, int]:
         return {}
 
 
+
+# ============================================================================
+# TRAINING FUNCTION
+# ============================================================================
+
 def train(config: Config):
     """Main training function."""
 
@@ -1170,8 +1311,8 @@ def train(config: Config):
     checkpoint_dir = f"checkpoints_{exp_name}"
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    # Set up safe logging
-    log_file = os.path.join(checkpoint_dir, f"Output_exp-{exp_name}.txt")
+    # Set up safe logging (replaces DualLogger)
+    log_file = os.path.join(checkpoint_dir, f"0utput_exp-{exp_name}.txt")
     setup_logging(log_file) 
     override_print_with_logger()
     print(f"Logging output to: {log_file}")
@@ -1199,20 +1340,56 @@ def train(config: Config):
     print("")
 
     # Load datasets
-    print(f"Loading datasets...")
-    ds_dict_clean = load_from_disk(config.data_path)  # ./hub_data/librispeech
+    print("Loading datasets from disk...")
     
-    if config.dataset_config == "460h":
-        ds_dict_other = load_from_disk(config.data_path + "_other")  # ./hub_data/librispeech_other
-        print(f"Creating merged 460h dataset (Lazy Concatenation)...")
-        train_dataset = concatenate_datasets([ds_dict_clean["train.100"], ds_dict_clean["train.360"]])
-        train_split_name = "TRAIN (clean.100 + clean.360)"
-        use_dual_validation = True
-    else:
-        # Default: 100h mode
+    clean_path = os.path.join(config.data_path, "clean")
+    other_path = os.path.join(config.data_path, "other")
+    
+    if not os.path.isdir(clean_path):
+        raise FileNotFoundError(f"Could not find clean dataset folder: {clean_path}")
+    if not os.path.isdir(other_path):
+        raise FileNotFoundError(f"Could not find other dataset folder: {other_path}")
+    
+    ds_dict_clean = load_from_disk(clean_path)   # hub_data/librispeech/clean
+    ds_dict_other = load_from_disk(other_path)   # hub_data/librispeech/other
+    
+    # Select training set based on dataset_config
+    cfg = config.dataset_config.lower()
+    
+    if cfg == "100h":
         train_dataset = ds_dict_clean["train.100"]
-        train_split_name = "TRAIN (clean.100)"
+        train_split_name = "TRAIN (clean train.100)"
         use_dual_validation = False
+    
+    elif cfg == "460h":
+        print("Creating merged 460h dataset: clean train.100 + clean train.360 (Lazy Concatenation)...")
+        train_dataset = concatenate_datasets([ds_dict_clean["train.100"], ds_dict_clean["train.360"]])
+        train_split_name = "TRAIN (clean train.100 + clean train.360)"
+        use_dual_validation = True
+    
+    elif cfg == "500h":
+        train_dataset = ds_dict_other["train.500"]
+        train_split_name = "TRAIN (other train.500)"
+        use_dual_validation = True
+    
+    elif cfg == "600h":
+        print("Creating merged 600h dataset: clean train.100 + other train.500 (Lazy Concatenation)...")
+        train_dataset = concatenate_datasets([ds_dict_clean["train.100"], ds_dict_other["train.500"]])
+        train_split_name = "TRAIN (clean train.100 + other train.500)"
+        use_dual_validation = True
+    
+    elif cfg == "960h":
+        print("Creating merged 960h dataset: clean train.100 + clean train.360 + other train.500 (Lazy Concatenation)...")
+        train_dataset = concatenate_datasets([
+            ds_dict_clean["train.100"],
+            ds_dict_clean["train.360"],
+            ds_dict_other["train.500"],
+        ])
+        train_split_name = "TRAIN (clean train.100 + clean train.360 + other train.500)"
+        use_dual_validation = True
+    
+    else:
+        raise ValueError(f"Unknown dataset_config='{config.dataset_config}'. Valid: 100h, 460h, 500h, 600h, 960h")
 
     # Training dataset
     train_ds = LibriSpeechDataset(
@@ -1238,13 +1415,13 @@ def train(config: Config):
     if use_dual_validation:
         # 460h mode: validate on both dev-clean and dev-other
         val_ds_clean = LibriSpeechDataset(
-            ds_dict_clean["validation"],
+            ds_dict_clean["validation"], 
             subset=config.subset_val,
             split_name="DEV-CLEAN",
             use_specaugment=False
         )
         val_ds_other = LibriSpeechDataset(
-            ds_dict_other["validation"],
+            ds_dict_other["validation"], 
             subset=config.subset_val,
             split_name="DEV-OTHER",
             use_specaugment=False
@@ -1268,12 +1445,11 @@ def train(config: Config):
         print(f"  Train batches per epoch: {len(train_loader)}")
         print(f"  Val batches per epoch (Clean): {len(val_loader_clean)}")
         print(f"  Val batches per epoch (Other): {len(val_loader_other)}")
-        print(f"\n[Config] 460h mode: Validating on DEV-CLEAN + DEV-OTHER, monitoring '{monitor_metric}' (average)")
-        
+        print(f"\n[Config] {cfg} mode: Validating on DEV-CLEAN + DEV-OTHER, monitoring '{monitor_metric}' (average)")        
     else:
         # 100h mode: validate on dev-clean only
         val_ds = LibriSpeechDataset(
-            ds_dict_clean["validation"],
+            ds_dict_clean["validation"], 
             subset=config.subset_val,
             split_name="DEV-CLEAN",
             use_specaugment=False
@@ -1289,7 +1465,7 @@ def train(config: Config):
         print(f"\nDataLoader Configuration:")
         print(f"  Train batches per epoch: {len(train_loader)}")
         print(f"  Val batches per epoch (DEV-CLEAN): {len(val_loaders)}")
-        print(f"\n[Config] 100h mode: Validating on DEV-CLEAN only, monitoring '{monitor_metric}'")
+        print(f"\n[Config] {cfg} mode: Validating on DEV-CLEAN only, monitoring '{monitor_metric}'")
 
     print(f"  Batch size: {config.batch_size}")
     print(f"  Accumulate: {config.accumulate_grad_batches} "
@@ -1310,7 +1486,8 @@ def train(config: Config):
         use_speed_perturb=config.use_speed_perturb,
         use_hierarchical=config.use_hierarchical,
         use_gating=config.use_gating,
-        enable_diagnostics=config.enable_diagnostics
+        enable_diagnostics=config.enable_diagnostics,
+        hier_params=config.hier_params,
     )
     
     # Save config
@@ -1320,18 +1497,19 @@ def train(config: Config):
     print(f"\nConfiguration saved to: {config_path}")
     print("")
     
-    if config.dataset_config == '100h':
-        monitor_metric = 'val_wer_clean'
-        print(f"\n[Config] 100h mode: Monitoring '{monitor_metric}' for Early Stopping.")
+    # Decide what to monitor for checkpointing / early stopping
+    if use_dual_validation:
+        monitor_metric = "val_wer"        # aggregate computed in on_validation_epoch_end
+        print(f"\n[Config] {cfg} mode: Monitoring '{monitor_metric}' (Avg Clean+Other) for Early Stopping.")
     else:
-        monitor_metric = 'val_wer'
-        print(f"\n[Config] 460h mode: Monitoring '{monitor_metric}' (Avg Clean+Other) for Early Stopping.")
+        monitor_metric = "val_wer_clean"  # single loader is treated as clean (idx=0)
+        print(f"\n[Config] {cfg} mode: Monitoring '{monitor_metric}' for Early Stopping.")
 
     # Callbacks
     checkpoint_callback = ModelCheckpoint(
         monitor=monitor_metric,
         dirpath=checkpoint_dir,
-        filename=f"best_{{epoch}}_{{{monitor_metric}:.3f}}",
+        filename=f"best_{{epoch}}_{{{monitor_metric}:.3f}}", 
         mode='min',
         save_top_k=3,
         save_last=True,
@@ -1354,8 +1532,6 @@ def train(config: Config):
         freeze_cb = HierarchyFreezeCallback(unfreeze_epoch=config.freeze_epochs)
         callbacks_list.append(freeze_cb)
     
-    # Logger
-    logger = CSVLogger(save_dir="logs", name=exp_name)
     
     # Trainer
     trainer = L.Trainer(
@@ -1384,30 +1560,53 @@ def train(config: Config):
     print(f"   Best checkpoint: {best_path}")
     print(f"   Results saved:   {checkpoint_dir}")
 
+
     # Final Evaluation
     print("\nEvaluating on test sets...")
     print(f"Loading best model: {best_path}")
 
-    # Load 'other' dataset if not already loaded (needed for 100h mode)
-    if not use_dual_validation:
-        ds_dict_other = load_from_disk(config.data_path + "_other")
 
     test_ds_clean = LibriSpeechDataset(
-        ds_dict_clean["test"],
+        ds_dict_clean["test"], 
         split_name="TEST-CLEAN",
         use_specaugment=False
     )
     test_loader_clean = DataLoader(test_ds_clean, batch_size=config.batch_size, collate_fn=collate_fn, num_workers=config.num_workers)
 
     test_ds_other = LibriSpeechDataset(
-        ds_dict_other["test"],
+        ds_dict_other["test"], 
         split_name="TEST-OTHER",
         use_specaugment=False
     )
     test_loader_other = DataLoader(test_ds_other, batch_size=config.batch_size, collate_fn=collate_fn, num_workers=config.num_workers)
     
     print("\nWER results for 'test-clean' and 'test-other':")
-    trainer.test(model, dataloaders=[test_loader_clean, test_loader_other], ckpt_path=best_path)
+    test_results = trainer.test(
+        model,
+        dataloaders=[test_loader_clean, test_loader_other],
+        ckpt_path=best_path
+    )
+    
+    # `test_results` is a list of dicts (one per dataloader)
+    # Append a clean, deterministic summary to your experiment log file.
+    with open(log_file, "a") as f:
+        f.write("\n\n" + "=" * 80 + "\n")
+        f.write("Summary of FINAL EVALUATION (trainer.test)\n")
+        f.write(f"Checkpoint used: {best_path}\n")
+        f.write(f"Num dataloaders: {len(test_results)}\n\n")
+    
+        for i, r in enumerate(test_results):
+            f.write(f"[Dataloader {i}]\n")
+            for k, v in sorted(r.items()):
+                f.write(f"  {k}: {v}\n")
+            f.write("\n")
+    
+    # Optional: also print the raw dicts so you see them in terminal without relying on Lightning's table
+    print("\n=== FINAL TEST RESULTS (raw dicts) ===")
+    for i, r in enumerate(test_results):
+        print(f"Dataloader {i}: {r}")
+
+
 
     # Save layer diagnostics
     print("\nSaving layer diagnostics...")
@@ -1428,49 +1627,56 @@ def train(config: Config):
     visualizer.generate_all()
     
     # 2. Run the plots that need the trained model
-    print(" Generating: parameter_breakdown.png")
+    print(" Generating: parameter_breakdown.pdf")
     param_counts = get_param_counts(model)
     if param_counts:
         visualizer.plot_parameter_breakdown(param_counts)
 
-    # 3. Hierarchical dynamics plot
-    visualizer.visualize_hierarchical_dynamics(model) 
+    # 3. Learned layer-wise dynamics plot
+    visualizer.visualize_hierarchical_dynamics(model)
 
     # 4. State dynamics heatmap
-    print(" Generating: state_dynamics_heatmap.png")
+    print(" Generating: state_dynamics_heatmap.pdf")
     visualizer.plot_state_dynamics_heatmap(model) 
 
     # 5. Run the GPU plot using data from the callback
-    print(" Generating: gpu_memory.png")
+    print(" Generating: gpu_memory.pdf")
     gpu_history = progress_callback.history
     if gpu_history['gpu_memory_allocated']:
         visualizer.plot_gpu_memory(gpu_history)
     else:
         print("  Skipped: No GPU memory data recorded.")
 
-    return best_wer, best_path
-
     # 6. WER vs Duration analysis
     if hasattr(model, 'final_detailed_results') and model.final_detailed_results:
-        print(" Generating: wer_vs_duration.png")
+        print(" Generating: wer_vs_duration.pdf")
         visualizer.plot_wer_vs_duration(model.final_detailed_results)
         
-        # 6. Example predictions (show 10 examples)
-        print(" Generating: example_predictions.png")
+        # 7. Example predictions (show 5 examples)
+        print(" Generating: example_predictions.pdf")
         # Sort by WER to show mix of good/bad examples
         sorted_results = sorted(model.final_detailed_results, key=lambda x: x['wer'])
         examples = [
             sorted_results[0],  # Best
-            sorted_results[len(sorted_results) // 4],  # Good
-            sorted_results[len(sorted_results) // 2],  # Medium
-            sorted_results[3 * len(sorted_results) // 4],  # Bad
+            sorted_results[len(sorted_results)//4],  # Good
+            sorted_results[len(sorted_results)//2],  # Medium
+            sorted_results[3*len(sorted_results)//4],  # Bad
             sorted_results[-1],  # Worst
         ]
         visualizer.plot_example_predictions(examples[:5])  # Show 5 examples
     else:
         print("  Skipped: No detailed validation results available.")
 
+    return best_wer, best_path
 
+
+
+# ============================================================================
+# GENERATING PLOTS AND FIGURES (VISUALIZATION)
+# ============================================================================
+
+
+# Set publication-quality defaults
 plt.rcParams.update({
     'font.size': 11,
     'font.family': 'serif',
@@ -1485,13 +1691,13 @@ plt.rcParams.update({
     'grid.alpha': 0.3,
 })
 
-# Color palette
+# Color palette (colorblind-friendly)
 COLORS = {
-    'primary': '#2E86AB',  # Blue
+    'primary': '#2E86AB',    # Blue
     'secondary': '#A23B72',  # Purple
-    'accent': '#F18F01',  # Orange
-    'success': '#06A77D',  # Green
-    'baseline': '#808080',  # Gray
+    'accent': '#F18F01',     # Orange
+    'success': '#06A77D',    # Green
+    'baseline': '#808080',   # Gray
 }
 
 
@@ -1504,8 +1710,8 @@ class Visualizer:
     def __init__(
         self,
         log_dir: str,
-        output_dir: str='model_figures',
-        exp_name: str='experiment'
+        output_dir: str = 'model_figures',
+        exp_name: str = 'experiment'
     ):
         """
         Initialize visualizer.
@@ -1539,6 +1745,7 @@ class Visualizer:
             figures = [
                 ('training_curves', self.plot_training_curves),
                 ('wer_curves', self.plot_wer_curves),
+                ('ablation_study', self.plot_ablation_study),
                 ('hierarchical_init', self.plot_hierarchical_initialization),
                 ('lr_schedule', self.plot_learning_rate_schedule),
             ]
@@ -1549,9 +1756,10 @@ class Visualizer:
                         func(csv_path)
                     else:
                         func()
-                    print(f" Generated: {name}.png")
+                    print(f" Generated: {name}.pdf")
                 except Exception as e:
-                    print(f" Failed: {name}.png - {e}")
+                    print(f" Failed: {name}.pdf - {e}")
+            
 
             print(f"Figures saved to: {self.output_dir}")
             
@@ -1566,7 +1774,11 @@ class Visualizer:
             raise FileNotFoundError(f"No metrics.csv found in {self.log_dir}")
         return max(csv_files, key=lambda p: p.stat().st_mtime)
     
-    def plot_training_curves(self, csv_path: Path): 
+    # ========================================================================
+    # CATEGORY 1: Training Dynamics
+    # ========================================================================
+    
+    def plot_training_curves(self, csv_path: Path):  
         """Plot training and validation loss curves."""
         try:
             # Read the CSV file
@@ -1599,7 +1811,7 @@ class Visualizer:
             }).reset_index()
             
             # Plot losses
-            ax.plot(epoch_data['epoch'], epoch_data[train_loss_col],
+            ax.plot(epoch_data['epoch'], epoch_data[train_loss_col], 
                     'b-', label='Train Loss', linewidth=2, marker='o', markersize=4)
             ax.plot(epoch_data['epoch'], epoch_data[val_loss_col],
                     'r-', label='Val Loss', linewidth=2, marker='o', markersize=4)
@@ -1612,13 +1824,13 @@ class Visualizer:
             ax.grid(True, alpha=0.3)
             
             # Save
-            save_path = self.output_dir / 'training_curves.png'
+            save_path = self.output_dir / 'training_curves.pdf'
             plt.tight_layout()
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close()
             
         except Exception as e:
-            print(f" Failed: training_curves.png - {e}")
+            print(f" Failed: training_curves.pdf - {e}")
             
             traceback.print_exc()
     
@@ -1650,18 +1862,98 @@ class Visualizer:
         ax.grid(True, alpha=0.3)
         
         # Save
-        save_path = self.output_dir / 'wer_curves.png'
+        save_path = self.output_dir / 'wer_curves.pdf'
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
     
-    def plot_hierarchical_initialization(self, n_layers: int=12):
-            """Plot hierarchical initialization values across layers."""
+    # ========================================================================
+    # CATEGORY 2: Ablation Study
+    # ========================================================================
+    
+    def plot_ablation_study(
+        self,
+        configurations: Optional[List[str]] = None,
+        wer_values: Optional[List[float]] = None
+    ):
+        """
+        Plot ablation study results.
+        
+        Args:
+            configurations: List of configuration names
+            wer_values: List of WER values (in percentage)
+        """
+        # Default values (update with your actual results)
+        if configurations is None:
+            configurations = [
+                'Baseline\nSSM',
+                '+ Non-uniform\nInit',
+                '+ Gating',
+                '+ Both',
+            ]
+        
+        if wer_values is None:
+            wer_values = [
+                32.88,  # Baseline
+                32.01,  # + Non-uniform init
+                31.78,  # + Gating
+                31.23,  # + Both
+            ]
+        
+        # Calculate absolute improvements
+        baseline = wer_values[0]
+        improvements = [0] + [baseline - wer for wer in wer_values[1:]]
+        
+        # Create figure
+        fig, ax = plt.subplots(figsize=(12, 7))
+        
+        # Colors: baseline gray, improvements blue
+        colors = [COLORS['baseline']] + [COLORS['primary']] * (len(configurations) - 1)
+        
+        # Create bars
+        bars = ax.bar(configurations, wer_values, color=colors,
+                      alpha=0.8, edgecolor='black', linewidth=1.5)
+        
+        # Add value labels on bars
+        for i, (bar, wer, imp) in enumerate(zip(bars, wer_values, improvements)):
+            height = bar.get_height()
+            
+            # WER value on top
+            ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                    f'{wer:.2f}%',
+                    ha='center', va='bottom', fontsize=11, fontweight='bold')
+            
+            # Improvement inside bar (skip baseline)
+            if i > 0:
+                ax.text(bar.get_x() + bar.get_width()/2., height - 2,
+                        f'↓{imp:.2f}%',
+                        ha='center', va='top', fontsize=10,
+                        color='white', fontweight='bold')
+        
+        # Styling
+        ax.set_ylabel('Word Error Rate (%)')
+        ax.set_title('Ablation Study: Impact of Architectural Components')
+        ax.set_ylim([0, max(wer_values) + 3])
+        ax.grid(True, alpha=0.3, axis='y')
+        
+        # Save
+        save_path = self.output_dir / 'ablation_study.pdf'
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.close()
+    
+    # ========================================================================
+    # CATEGORY 3: SSM-Specific Visualizations
+    # ========================================================================
+    
+    def plot_hierarchical_initialization(self, n_layers: int = 12):
+            """Plot non-uniform init schedule values across layers."""
             layers = np.arange(n_layers)
             # Avoid division by zero if n_layers=1
             denom = max(1, n_layers - 1)
             layer_progress = layers / denom
             
+            # Values match the forward schedule in HierarchicalSelectiveSSMLayer
             a_early, a_late = 0.15, 0.85
             b_early, b_late = 0.35, 0.12
             c_early, c_late = -0.35, 0.20
@@ -1678,7 +1970,7 @@ class Visualizer:
             axes[0].plot(layers, a_means, marker='o', linewidth=2,
                          markersize=8, color=COLORS['primary'])
             axes[0].set_ylabel('State Decay (a)')
-            axes[0].set_title('Hierarchical State Dynamics Initialization')
+            axes[0].set_title('Non-Uniform Layer-Wise Initialization Schedule')
             axes[0].grid(True, alpha=0.3)
             
             # Plot b (input sensitivity)
@@ -1695,16 +1987,20 @@ class Visualizer:
             axes[2].grid(True, alpha=0.3)
             
             # Save
-            save_path = self.output_dir / 'hierarchical_init.png'
+            save_path = self.output_dir / 'hierarchical_init.pdf'
             plt.tight_layout()
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close()
     
+    # ========================================================================
+    # CATEGORY 4: Training Configuration
+    # ========================================================================
+    
     def plot_learning_rate_schedule(
         self,
-        learning_rate: float=1e-3,
-        warmup_steps: int=500,
-        total_steps: int=26700
+        learning_rate: float = 1e-3,
+        warmup_steps: int = 500,
+        total_steps: int = 26700
     ):
         """Plot learning rate schedule."""
         steps = np.arange(total_steps)
@@ -1736,14 +2032,18 @@ class Visualizer:
         ax.grid(True, alpha=0.3)
         
         # Save
-        save_path = self.output_dir / 'lr_schedule.png'
+        save_path = self.output_dir / 'lr_schedule.pdf'
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
     
+    # ========================================================================
+    # ADDITIONAL UTILITIES
+    # ========================================================================
+    
     def plot_parameter_breakdown(
         self,
-        components: Optional[Dict[str, int]]=None
+        components: Optional[Dict[str, int]] = None
     ):
         """Plot parameter distribution across model components."""
         if components is None:
@@ -1766,14 +2066,15 @@ class Visualizer:
         ax.set_title('Parameter Distribution Across Model Components')
         
         # Save
-        save_path = self.output_dir / 'parameter_breakdown.png'
+        save_path = self.output_dir / 'parameter_breakdown.pdf'
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
 
+
     def visualize_hierarchical_dynamics(self, model):
             """Visualize learned temporal dynamics across layers"""
-            print(" Generating: hierarchical_dynamics.png (Learned Parameters)")
+            print(" Generating: hierarchical_dynamics.pdf (Learned Parameters)")
             
             fig, axes = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
             
@@ -1785,7 +2086,7 @@ class Visualizer:
             
             # Loop through the model's encoder layers
             for idx, layer in enumerate(model.model.encoder.layers):
-                if hasattr(layer, 'a0'):  # Check if it's the right layer type
+                if hasattr(layer, 'a0'): # Check if it's the right layer type
                     layer_indices.append(idx)
                     # Get mean of the learned base parameters
                     a_params.append(layer.a0.detach().mean().cpu().item())
@@ -1800,7 +2101,7 @@ class Visualizer:
             # Plot A parameters (decay rates)
             axes[0].plot(layer_indices, a_params, marker='o', linewidth=2, color=COLORS['primary'])
             axes[0].set_ylabel('Mean Learned State Decay (a0)')
-            axes[0].set_title('Learned Hierarchical Dynamics (Mean Parameter Values)')
+            axes[0].set_title('Learned Layer-Wise Dynamics (Mean Parameter Values After Training)')
             axes[0].grid(True, alpha=0.3)
             
             # Plot B parameters (input sensitivity)
@@ -1815,7 +2116,7 @@ class Visualizer:
             axes[2].grid(True, alpha=0.3)
             
             plt.tight_layout()
-            save_path = self.output_dir / 'hierarchical_dynamics.png'
+            save_path = self.output_dir / 'hierarchical_dynamics.pdf'
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close()
 
@@ -1829,9 +2130,9 @@ class Visualizer:
         
         epochs = range(1, len(history['gpu_memory_allocated']) + 1)
         
-        ax.plot(epochs, history['gpu_memory_allocated'],
+        ax.plot(epochs, history['gpu_memory_allocated'], 
                 label='Allocated', color=COLORS['primary'], linewidth=2)
-        ax.plot(epochs, history['gpu_memory_reserved'],
+        ax.plot(epochs, history['gpu_memory_reserved'], 
                 label='Reserved', color=COLORS['secondary'], linewidth=2)
         
         ax.set_xlabel('Epoch', fontsize=12)
@@ -1840,7 +2141,7 @@ class Visualizer:
         ax.legend(fontsize=11)
         ax.grid(True, alpha=0.3)
         
-        save_path = self.output_dir / 'gpu_memory.png'
+        save_path = self.output_dir / 'gpu_memory.pdf'
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
@@ -1856,8 +2157,8 @@ class Visualizer:
         bin_wers = []
         bin_labels = []
         
-        for i in range(len(bins) - 1):
-            mask = [(d >= bins[i] and d < bins[i + 1]) for d in durations]
+        for i in range(len(bins)-1):
+            mask = [(d >= bins[i] and d < bins[i+1]) for d in durations]
             if any(mask):
                 bin_wers.append(np.mean([w for w, m in zip(wers, mask) if m]))
                 bin_labels.append(f'{bins[i]}-{bins[i+1]}s')
@@ -1869,7 +2170,7 @@ class Visualizer:
         ax.set_title('WER vs Audio Duration')
         ax.grid(True, alpha=0.3, axis='y')
         
-        save_path = self.output_dir / 'wer_vs_duration.png'
+        save_path = self.output_dir / 'wer_vs_duration.pdf'
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
 
@@ -1880,7 +2181,7 @@ class Visualizer:
         
         # Sample subset of dimensions for visualization
         sample_dims = min(64, d_model)
-        dim_indices = np.linspace(0, d_model - 1, sample_dims, dtype=int)
+        dim_indices = np.linspace(0, d_model-1, sample_dims, dtype=int)
         
         a_matrix = np.zeros((n_layers, sample_dims))
         b_matrix = np.zeros((n_layers, sample_dims))
@@ -1903,7 +2204,7 @@ class Visualizer:
         ax2.set_title('Input Sensitivity (b0) Across Layers')
         plt.colorbar(im2, ax=ax2)
         
-        save_path = self.output_dir / 'state_dynamics_heatmap.png'
+        save_path = self.output_dir / 'state_dynamics_heatmap.pdf'
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
@@ -1924,7 +2225,7 @@ class Visualizer:
                 wer_col: 'mean'
             }).reset_index()
             
-            ax1.plot(epoch_data['epoch'], epoch_data[loss_col],
+            ax1.plot(epoch_data['epoch'], epoch_data[loss_col], 
                     label=name, linewidth=2, marker='o', markersize=3)
             ax2.plot(epoch_data['epoch'], epoch_data[wer_col] * 100,
                     label=name, linewidth=2, marker='o', markersize=3)
@@ -1941,7 +2242,7 @@ class Visualizer:
         ax2.legend()
         ax2.grid(True, alpha=0.3)
         
-        save_path = self.output_dir / 'convergence_comparison.png'
+        save_path = self.output_dir / 'convergence_comparison.pdf'
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
@@ -1966,18 +2267,22 @@ class Visualizer:
                 transform=ax.transAxes, fontsize=10,
                 verticalalignment='top', fontfamily='monospace')
         
-        save_path = self.output_dir / 'example_predictions.png'
+        save_path = self.output_dir / 'example_predictions.pdf'
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
 
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
 
 @dataclass
 class Config:
     """Training configuration."""
     
     # Data
-    data_path: str = "../hub_data/librispeech"
+    data_path: str = "hub_data/librispeech"
     train_split: str = "train.100"
     val_split: str = "validation"
     dataset_config: str = "100h"
@@ -1986,40 +2291,58 @@ class Config:
     
     # Training
     batch_size: int = 32
-    num_workers: int = min(4, os.cpu_count() or 1)  # auto-detect
+    num_workers: int = min(4, os.cpu_count() or 1)      # auto-detect
     epochs: int = 30
     learning_rate: float = 1e-3
     warmup_steps: int = 500
     weight_decay: float = 0.05
     gradient_clip_val: float = 5.0
     accumulate_grad_batches: int = 1
-    enable_diagnostics: bool = False  # Diagnostic Logging every 100 batches (at, bt, ct, s)
+    enable_diagnostics: bool = False       # Diagnostic Logging every 100 batches (at, bt, ct, s)
     freeze_epochs: int = 0  # 0 = disabled
     
     # Model
     d_model: int = 256 
     n_layers: int = 12 
     dropout: float = 0.1
-    use_hierarchical: bool = True
+    use_hierarchical: bool = True       # Legacy name; enables non-uniform layer-wise init
     use_gating: bool = True
-
-    # HIERARCHICAL CONFIGURATION
+    hier_params: str = 'abc'  # Which bias params get non-uniform init (legacy name)
+    global HIER_MODE
     global HIER_CONFIG
-    HIER_CONFIG = {
+        
+    # Non-uniform init schedule (legacy name: HIER_CONFIG)
+    # Forward schedule: early layers get fast-decay (short memory), late layers get slow-decay.
+    HIER_CONFIG_DEFAULT = {
         # State Decay (a): High = Long Memory, Low = Short Memory
         # Note: tanh(0.85) ≈ 0.69 retention, tanh(0.15) ≈ 0.15 retention
-        'A0_EARLY': 0.15,  # Fast decay for acoustic (was 0.85)
-        'A0_LATE': 0.85,  # Slow decay for linguistic (was 0.15)
+        'A0_EARLY': 0.15,   # Fast decay for early layers
+        'A0_LATE':  0.85,   # Slow decay for late layers
         
         # Input Sensitivity (b): High = Sensitive to new input
-        'B0_EARLY': 0.35,  # High sensitivity for acoustic details
-        'B0_LATE': 0.12,  # Lower sensitivity (filtered input)
+        'B0_EARLY': 0.35,   # High sensitivity in early layers
+        'B0_LATE':  0.12,   # Lower sensitivity in late layers
         
         # Output Weight (c): High = Stronger contribution to output
-        'C0_EARLY':-0.35,  # Lower state output → sigmoid ≈ 0.41
-        'C0_LATE': 0.20  # Higher state output → sigmoid ≈ 0.55
+        'C0_EARLY': -0.35,  # Lower state output → sigmoid ≈ 0.41
+        'C0_LATE':  0.20    # Higher state output → sigmoid ≈ 0.55
 }
-    
+
+    # Reversed schedule (ablation experiment)
+    HIER_CONFIG_REV = {
+        'A0_EARLY': 0.85,   # Was 0.15 — now SLOW decay for early layers
+        'A0_LATE':  0.15,   # Was 0.85 — now FAST decay for deep layers
+        'B0_EARLY': 0.12,   # Was 0.35 — swap sensitivity too
+        'B0_LATE':  0.35,   # Was 0.12
+        'C0_EARLY': 0.20,   # Was -0.35 — swap output weight
+        'C0_LATE':  -0.35   # Was 0.20
+    }
+
+    # Random init (ablation experiment)
+    # Declare which initialization strategy to use
+    HIER_MODE = 'normal'                 # 'normal' OR 'random'
+    HIER_CONFIG = HIER_CONFIG_DEFAULT    # 'HIER_CONFIG_DEFAULT' or 'HIER_CONFIG_REV'
+
     # Augmentation
     use_specaugment: bool = True
     use_speed_perturb: bool = False
@@ -2030,7 +2353,7 @@ class Config:
     seed: int = 42
     
     # Experiment
-    exp_name: str = "hierarchical_gating_correct"
+    exp_name: str = "hierarchical_gating"
     
     def get_exp_name(self) -> str:
         """Generate experiment name."""
@@ -2042,17 +2365,22 @@ class Config:
         return name
 
 
+
+# ============================================================================
+# MAIN
+# ============================================================================
+
 def main():
     """Main entry point."""
     
     parser = argparse.ArgumentParser(
-        description="SSM-ASR: Hierarchical States + Gating"
+        description="S-SSSM ASR encoder: non-uniform layer-wise init + gating"
     )
     
     parser.add_argument(
         '--data-path',
         type=str,
-        default='../hub_data/librispeech',
+        default='hub_data/librispeech',
         help='Path to LibriSpeech dataset'
     )
     
@@ -2060,8 +2388,8 @@ def main():
         '--dataset-config',
         type=str,
         default='100h',
-        choices=['100h', '460h'],
-        help='Select training set: "100h" (default) or "460h" (combines train.100 + train.360)'
+        choices=['100h', '460h', '500h', '600h', '960h'],
+        help='Select training set: 100h, 460h (100+360), 500h (other), 600h (100+500), 960h (100+360+500)'
     )
     
     parser.add_argument(
@@ -2123,7 +2451,7 @@ def main():
     parser.add_argument(
         '--no-hierarchical',
         action='store_true',
-        help='Disable hierarchical state dynamics'
+        help='Disable non-uniform layer-wise init (use uniform zeros). Flag name kept for compatibility.'
     )
     
     parser.add_argument(
@@ -2169,8 +2497,16 @@ def main():
         '--freeze-epochs',
         type=int,
         default=0,
-        help='Number of epochs to freeze hierarchical parameters (set to 0 to disable)'
+        help='Epochs to freeze non-uniform init parameters a0/b0 (0 = disabled). Flag name kept for compatibility.'
     )
+
+    parser.add_argument(
+        '--hier-params',
+        type=str,
+        default='abc',
+        help='Which bias params get non-uniform init, any combo of a/b/c (e.g. "a", "bc", "abc"). Flag name kept for compatibility.'
+    )
+
     
     args = parser.parse_args()
         
@@ -2188,6 +2524,7 @@ def main():
         learning_rate=args.lr,
         use_hierarchical=not args.no_hierarchical,
         use_gating=not args.no_gating,
+        hier_params=args.hier_params,
         freeze_epochs=args.freeze_epochs,
         use_specaugment=not args.no_specaugment,
         use_speed_perturb=args.speed_perturb,
@@ -2209,6 +2546,12 @@ def main():
         traceback.print_exc()
         sys.exit(1)
 
+
+
+
+# ============================================================================
+# MAIN FUNCTION CALL
+# ============================================================================
 
 if __name__ == '__main__':
     main()
