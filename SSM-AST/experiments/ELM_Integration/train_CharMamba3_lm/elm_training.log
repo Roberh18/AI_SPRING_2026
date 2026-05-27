@@ -1,0 +1,69 @@
+
+======================================================================
+  ELM Training Configuration
+======================================================================
+  label               : ELM
+  model_type          : mamba3
+  d_model             : 320
+  n_layers            : 18
+  d_state             : 64
+  headdim             : 64
+  is_mimo             : False
+  vocab_size          : 29
+  total_params        : 12,111,813
+  trainable_params    : 12111813
+  train_chunks        : 1855467
+  val_chunks          : 97655
+  epochs              : 20
+  batch_size          : 64
+  accum_steps         : 2
+  effective_batch     : 128
+  lr                  : 0.001
+  weight_decay        : 0.01
+  label_smoothing     : 0.1
+  patience            : 5
+  device              : cuda:0
+  timestamp           : 2026-03-29 12:24:43
+  save_dir            : lm_checkpoints/elm_mamba3_MaxChars-1000000000_d320_L18
+  backend             : official mamba_ssm v2.3.1 (Triton kernels)
+======================================================================
+  [ELM] Label smoothing=0.1, theoretical loss floor=0.1015 (PPL 1.11)
+  [ELM] Micro-batches/epoch: 28992, Optimizer steps/epoch: 14496, Effective batch: 128
+
+  [ELM] Epoch  1/20 -- Train: 1.4416 (PPL 4.23), Val: 1.4553 (PPL 4.29), Gap: +0.0137, Time: 15084s (val: 269s), Total: 4.2h | GPU Peak: 8.0GB *
+    [ELM] Best model saved (val_loss=1.4553, PPL=4.29)
+  [ELM] Epoch  2/20 -- Train: 1.3698 (PPL 3.93), Val: 1.4331 (PPL 4.19), Gap: +0.0633, Time: 15069s (val: 269s), Total: 8.4h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.4331, PPL=4.19)
+  [ELM] Epoch  3/20 -- Train: 1.3556 (PPL 3.88), Val: 1.4236 (PPL 4.15), Gap: +0.0680, Time: 15065s (val: 269s), Total: 12.6h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.4236, PPL=4.15)
+  [ELM] Epoch  4/20 -- Train: 1.3476 (PPL 3.85), Val: 1.4179 (PPL 4.13), Gap: +0.0704, Time: 15066s (val: 269s), Total: 16.7h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.4179, PPL=4.13)
+  [ELM] Epoch  5/20 -- Train: 1.3420 (PPL 3.83), Val: 1.4130 (PPL 4.11), Gap: +0.0710, Time: 15066s (val: 269s), Total: 20.9h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.4130, PPL=4.11)
+  [ELM] Epoch  6/20 -- Train: 1.3377 (PPL 3.81), Val: 1.4088 (PPL 4.09), Gap: +0.0711, Time: 15063s (val: 269s), Total: 25.1h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.4088, PPL=4.09)
+  [ELM] Epoch  7/20 -- Train: 1.3342 (PPL 3.80), Val: 1.4066 (PPL 4.08), Gap: +0.0724, Time: 15066s (val: 269s), Total: 29.3h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.4066, PPL=4.08)
+  [ELM] Epoch  8/20 -- Train: 1.3312 (PPL 3.79), Val: 1.4037 (PPL 4.07), Gap: +0.0725, Time: 15063s (val: 269s), Total: 33.5h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.4037, PPL=4.07)
+  [ELM] Epoch  9/20 -- Train: 1.3286 (PPL 3.78), Val: 1.4024 (PPL 4.06), Gap: +0.0738, Time: 15062s (val: 269s), Total: 37.7h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.4024, PPL=4.06)
+  [ELM] Epoch 10/20 -- Train: 1.3263 (PPL 3.77), Val: 1.4013 (PPL 4.06), Gap: +0.0751, Time: 15063s (val: 269s), Total: 41.9h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.4013, PPL=4.06)
+  [ELM] Epoch 11/20 -- Train: 1.3241 (PPL 3.76), Val: 1.3999 (PPL 4.05), Gap: +0.0757, Time: 15064s (val: 269s), Total: 46.0h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.3999, PPL=4.05)
+  [ELM] Epoch 12/20 -- Train: 1.3223 (PPL 3.75), Val: 1.3990 (PPL 4.05), Gap: +0.0768, Time: 15066s (val: 269s), Total: 50.2h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.3990, PPL=4.05)
+  [ELM] Epoch 13/20 -- Train: 1.3208 (PPL 3.75), Val: 1.3974 (PPL 4.04), Gap: +0.0767, Time: 15065s (val: 269s), Total: 54.4h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.3974, PPL=4.04)
+  [ELM] Epoch 14/20 -- Train: 1.3196 (PPL 3.74), Val: 1.3972 (PPL 4.04), Gap: +0.0776, Time: 15062s (val: 269s), Total: 58.6h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.3972, PPL=4.04)
+  [ELM] Epoch 15/20 -- Train: 1.3188 (PPL 3.74), Val: 1.3970 (PPL 4.04), Gap: +0.0782, Time: 15062s (val: 269s), Total: 62.8h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.3970, PPL=4.04)
+  [ELM] Epoch 16/20 -- Train: 1.3183 (PPL 3.74), Val: 1.3968 (PPL 4.04), Gap: +0.0786, Time: 15064s (val: 269s), Total: 67.0h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.3968, PPL=4.04)
+  [ELM] Epoch 17/20 -- Train: 1.3179 (PPL 3.74), Val: 1.3969 (PPL 4.04), Gap: +0.0790, Time: 15063s (val: 269s), Total: 71.1h | GPU Peak: 7.8GB
+  [ELM] Epoch 18/20 -- Train: 1.3178 (PPL 3.74), Val: 1.3967 (PPL 4.04), Gap: +0.0790, Time: 15064s (val: 269s), Total: 75.3h | GPU Peak: 7.8GB *
+    [ELM] Best model saved (val_loss=1.3967, PPL=4.04)
+  [ELM] Epoch 19/20 -- Train: 1.3177 (PPL 3.73), Val: 1.3968 (PPL 4.04), Gap: +0.0791, Time: 15062s (val: 269s), Total: 79.5h | GPU Peak: 7.8GB
+  [ELM] Epoch 20/20 -- Train: 1.3177 (PPL 3.73), Val: 1.3967 (PPL 4.04), Gap: +0.0791, Time: 15063s (val: 269s), Total: 83.7h | GPU Peak: 7.8GB

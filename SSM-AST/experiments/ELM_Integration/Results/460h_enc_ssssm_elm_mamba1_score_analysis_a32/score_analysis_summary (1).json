@@ -1,0 +1,8 @@
+{
+  "n_total": 2620,
+  "n_reranked": 913,
+  "ctc_mean": -6.445489801797632,
+  "elm_mean": -1.2382397098977704,
+  "log_path": "ilme_mamba_results_mamba_score_analysis_460h/score_analysis_alpha32.0_beam10.txt",
+  "fig_dir": "ilme_mamba_results_mamba_score_analysis_460h/figures"
+}
