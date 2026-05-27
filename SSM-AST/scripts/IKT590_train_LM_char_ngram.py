@@ -10,18 +10,22 @@ so the entire tune/eval/score_analysis pipeline works unchanged.
 
 Prerequisites:
     A char_level_text.txt file produced by the train_kenlm mode of the
-    main evaluation script (IKT590_eval_ASR.py). One sentence per line,
+    main evaluation scrip:
+    "librispeecm_lm_dataset_pre-processed_char_level_text.txt"
+    
+    One sentence per line,
     characters space-separated, word boundaries marked with ▁.
+    
 
 Usage:
     # Train 7-gram and 10-gram baselines
     python IKT590_train_LM_char_ngram.py \\
-        --train-text lm_checkpoints/kenlm/char_level_text.txt \\
+        --train-text lm_checkpoints/kenlm/librispeecm_lm_dataset_pre-processed_char_level_text.txt \\
         --orders 7,10 --output-dir lm_checkpoints/ngram
 
     # Train a single order with limited data (quick test)
     python IKT590_train_LM_char_ngram.py \\
-        --train-text lm_checkpoints/kenlm/char_level_text.txt \\
+        --train-text lm_checkpoints/kenlm/librispeecm_lm_dataset_pre-processed_char_level_text.txt \\
         --orders 7 --max-lines 10000 --output-dir lm_checkpoints/ngram
 
     # Use the output .pkl files with load_lm() in the eval script:
