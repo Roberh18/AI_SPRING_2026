@@ -35,8 +35,6 @@ Minimal command:
 python scripts/download_dataset.py
 ```
 
-Essential: Yes.
-
 GPU/checkpoint requirements: None.
 
 Notes: The script downloads `openslr/librispeech_asr` with both `clean` and `other` configurations, saves them with `save_to_disk`, reloads them, and prints the resulting folder tree.
@@ -112,8 +110,6 @@ python scripts/IKT590_train_ASR_encoder_SSSM.py \
   --epochs 50 \
   --exp-name ssssm_960h
 ```
-
-Essential: Yes, if retraining the S-SSSM encoder. For examiner evaluation with provided checkpoints, training is not required.
 
 GPU/checkpoint requirements: GPU strongly recommended. No checkpoint required for training from scratch.
 
@@ -207,7 +203,6 @@ python scripts/IKT590_train_ASR_encoder_mamba-1.py \
   --exp-name mamba1_100h
 ```
 
-Essential: Essential for reproducing Mamba-1 encoder experiments. Not required for the default S-SSSM final evaluation if a checkpoint is provided.
 
 GPU/checkpoint requirements: GPU recommended. CUDA Mamba kernels are much faster than the pure PyTorch fallback. Use `--no-cuda-kernels` only for small checks or debugging.
 
@@ -270,7 +265,6 @@ python scripts/IKT590_train_ASR_encoder_mamba-3.py \
   --exp-name mamba3_100h
 ```
 
-Essential: Essential only for reproducing Mamba-3 encoder experiments. Not required for default final evaluation.
 
 GPU/checkpoint requirements: Mamba-3 may require A100/H100 or compatible modern NVIDIA GPU and a special `mamba-ssm` GitHub/Triton setup.
 
@@ -336,7 +330,7 @@ python scripts/IKT590_train_LM_CharMamba-1.py \
   --lm-lr 1e-3
 ```
 
-Essential: Required only if retraining CharMamba-1. For final evaluation, a provided LM checkpoint directory is sufficient.
+Required only if retraining CharMamba-1. For final evaluation, a provided LM checkpoint directory is sufficient.
 
 GPU/checkpoint requirements: GPU strongly recommended. Requires `mamba-ssm`.
 
@@ -409,7 +403,7 @@ python scripts/IKT590_train_LM_CharMamba-3_Triton.py \
   --lr 1e-3
 ```
 
-Essential: Optional for final evaluation. Required only for Mamba-3 LM comparison.
+Optional for final evaluation. Required only for Mamba-3 LM comparison.
 
 GPU/checkpoint requirements: Requires modern NVIDIA GPU and special Mamba-3/Triton setup. The script is optimized for A100/H100 and may fail on V100 or older GPUs.
 
@@ -485,7 +479,7 @@ python scripts/IKT590_train_LM_char_ngram.py \
   --output-dir lm_checkpoints/ngram_smoke
 ```
 
-Essential: Essential for n-gram control comparisons. Not required for CharMamba-only final evaluation.
+Only for n-gram control comparisons. Not required for CharMamba-only final evaluation.
 
 GPU/checkpoint requirements: None.
 
@@ -560,7 +554,7 @@ python scripts/IKT590_evaluate_ASR_pipeline.py \
   --exp-name final_ssssm_charmamba1_eval
 ```
 
-Essential: Yes. This is the main examiner evaluation script.
+This is the main evaluation script.
 
 GPU/checkpoint requirements: Requires encoder and LM checkpoints for meaningful evaluation. GPU recommended for practical runtime.
 
@@ -591,32 +585,6 @@ Important CLI arguments:
 - `--exp-name`
 - `--seed`
 
-## Optional diagnostic scripts
-
-The uploaded file set did not include standalone diagnostic scripts. If the repository includes them, document them here.
-
-### `scripts/IKT590_lm_diagnostic.py`
-
-Purpose: Optional LM diagnostic for coherent vs scrambled sentences, real vs nonsense text, minimal pairs, long-range agreement, next-character prediction, and sentence completion.
-
-Pipeline role: Optional qualitative/diagnostic LM analysis.
-
-Inputs:
-
-- LM checkpoint directory or n-gram `.pkl`.
-- Diagnostic sentence sets.
-
-Outputs:
-
-- Diagnostic scores, logs, and optional figures.
-
-Minimal command:
-
-```bash
-python scripts/IKT590_lm_diagnostic.py --help
-```
-
-Essential: No.
 
 GPU/checkpoint requirements: Requires an LM checkpoint. GPU may be required for CharMamba models.
 
@@ -641,6 +609,5 @@ Minimal command:
 python scripts/IKT590_lm_diagnostic_v2.py --help
 ```
 
-Essential: No.
 
 GPU/checkpoint requirements: Requires an LM checkpoint. GPU may be required for CharMamba models.
