@@ -480,7 +480,6 @@ The evaluation script includes these analysis modes:
 - `score_analysis`: CTC and LM score breakdown with figures.
 - `verify_streaming`: verifies consistency between batch and streaming LM scoring.
 
-If the repository includes standalone diagnostic scripts such as `IKT590_lm_diagnostic.py` or `IKT590_lm_diagnostic_v2.py`, treat them as optional. They are useful for probing LM behavior, but they are not required for the final ASR evaluation path.
 
 ## Legacy naming note
 
