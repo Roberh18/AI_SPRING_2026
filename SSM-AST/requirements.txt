@@ -1,14 +1,22 @@
-# Install with: pip install -r requirements.txt
-# Or use the one-liner from Quick_setup_guide.txt
-torch>=2.0.0
-torchaudio>=2.0.0
-torchvision>=0.15.0
-lightning>=2.0.0
-jiwer>=2.0.0
-soundfile>=0.12.1
-librosa>=0.10.0
-datasets[audio]==2.18.0
-matplotlib>=3.0.0
-numpy<2.0
-pandas>=1.0.0
-ipywidgets>=7.0.0
+# Core ASR / training dependencies
+numpy
+pandas
+matplotlib
+datasets
+jiwer
+lightning
+
+# Install torch/torchaudio using the wheel matching your CUDA version.
+# Example for CUDA 12.4:
+# pip install torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
+torch
+torchaudio
+
+# Mamba-1 / CharMamba-1 dependencies.
+# These are CUDA/PyTorch-version sensitive. If installation fails, see setup_guide.md.
+causal-conv1d==1.5.0.post8
+mamba-ssm==2.2.4
+
+# Optional dependency used only if KenLM-format models are evaluated.
+# The pure Python n-gram baseline does not require kenlm.
+# kenlm

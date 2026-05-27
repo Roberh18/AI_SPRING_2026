@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+conda-env/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data
+hub_data/
+data/
+datasets/
+*.flac
+*.wav
+*.mp3
+*.tar
+*.tar.gz
+*.zip
+
+# Checkpoints and model artifacts
+checkpoints*/
+encoder_checkpoints/
+lm_checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.pkl
+*.safetensors
+*.arpa
+*.bin
+
+# Lightning / training logs
+lightning_logs/
+wandb/
+logs/
+*.log
+events.out.tfevents*
+
+# Evaluation outputs
+results/
+ilme_mamba_results_*/
+*_results/
+*_outputs/
+score_analysis*/
+hallucination*/
+rtfx*/
+
+# Generated figures and reports
+figures/
+model_figures/
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.svg
+
+# Temporary files
+tmp/
+temp/
+.cache/

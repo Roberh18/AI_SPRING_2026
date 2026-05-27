@@ -1,231 +1,498 @@
 # State Space Models for Automatic Speech Transcription
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch 2.0+](https://img.shields.io/badge/pytorch-2.0+-orange.svg)](https://pytorch.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+This repository contains the cleaned code for a master's thesis project on attention-free automatic speech transcription with State Space Models (SSMs). It supports training and evaluating S-SSSM, Mamba-1, and Mamba-3 CTC acoustic encoders on LibriSpeech, plus character-level language-model rescoring using CharMamba-1, CharMamba-3, or a pure Python character n-gram baseline with Stupid Backoff.
 
-This repository contains the implementation for my ICT project at the University of Agder (IKT464).
+## What this repository contains
 
-## Overview
+- S-SSSM CTC acoustic encoder training.
+- Mamba-1 CTC acoustic encoder training.
+- Mamba-3 CTC acoustic encoder training.
+- CharMamba-1 character-level language model training.
+- CharMamba-3 character-level language model training.
+- Pure Python character n-gram LM training with Stupid Backoff.
+- ASR evaluation with greedy CTC, prefix beam search, shallow fusion, WER, RTFX, hallucination analysis, score analysis, and streaming verification.
+- LibriSpeech dataset download/setup helper.
+- Optional LM diagnostic utilities, if included in the repository.
 
-This work investigates **State Space Models (SSM)** for Automatic Speech Recognition (ASR). Unlike standard SSM implementations that initialize all layers uniformly, this architecture initializes layers with **progressively slower temporal decay rates**, explicitly encoding an inductive bias that mirrors human auditory processing:
+Recommended structure:
 
-- **Early layers**: Fast-decaying states for short-term acoustic cues (10-50 ms)
-- **Deep layers**: Slow-decaying states for longer linguistic timescales (100s of ms to seconds)
-
-## Architecture
+```text
+.
+├── README.md
+├── REPRODUCIBILITY.md
+├── CHECKPOINTS.md
+├── setup_guide.md
+├── SCRIPT_OVERVIEW.md
+├── requirements.txt
+├── environment.yml
+├── .gitignore
+├── scripts/
+│   ├── download_dataset.py
+│   ├── IKT590_train_ASR_encoder_SSSM.py
+│   ├── IKT590_train_ASR_encoder_mamba-1.py
+│   ├── IKT590_train_ASR_encoder_mamba-3.py
+│   ├── IKT590_train_LM_char_ngram.py
+│   ├── IKT590_train_LM_CharMamba-1.py
+│   ├── IKT590_train_LM_CharMamba-3_Triton.py
+│   └── IKT590_evaluate_ASR_pipeline.py
+├── hub_data/
+│   └── librispeech/
+│       ├── clean/
+│       └── other/
+├── encoder_checkpoints/
+├── lm_checkpoints/
+└── results/
 ```
-Input Audio → Log-Mel Spectrogram → Conv Subsampler (4×) → S-SSSM Encoder (L layers) → CTC Classifier
+
+If your local script names differ, use the names actually present in `scripts/`.
+
+## Fast path: evaluate the final pipeline
+
+The intended examiner path is evaluation with existing checkpoints. Full 960 h training is compute-heavy and is not expected to run quickly on a normal workstation.
+
+Expected inputs:
+
+```text
+hub_data/librispeech/clean/
+hub_data/librispeech/other/
+encoder_checkpoints/S-SSSM/960h/<encoder-checkpoint>.ckpt
+lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18/elm_best.pt
 ```
 
-Each S-SSSM layer contains:
-- Layer Normalization
-- Input Projection (with gating split)
-- Depthwise Convolution (local context)
-- Selective SSM Recurrence (with hierarchical dynamics)
-- GLU Gating (optional)
-- Output Projection + Residual
+Example final evaluation command:
+
+```bash
+python scripts/IKT590_evaluate_ASR_pipeline.py \
+  --mode full_eval \
+  --data-path hub_data/librispeech \
+  --asr-checkpoint encoder_checkpoints/S-SSSM/960h/<checkpoint>.ckpt \
+  --asr-type sssm \
+  --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 \
+  --alpha <ALPHA> \
+  --beta <BETA> \
+  --beam-width 10 \
+  --batch-size 64 \
+  --exp-name final_ssssm_charmamba1_eval
+```
+
+Use the thesis-tuned `alpha` and `beta` values if documented. Otherwise, run `--mode tune` first on the development split and record the selected values.
 
 ## Installation
 
-### Prerequisites
+A standard environment is sufficient for S-SSSM training, n-gram LM training, dataset setup, and basic script checks.
 
-- Python 3.8+
-- CUDA-capable GPU (recommended)
-- ~10GB disk space for LibriSpeech 100h dataset
-
-### Quick Install
 ```bash
-# Clone the repository
-git clone https://github.com/Roberh18/IKT464.git
-cd IKT464
+python -m venv .venv
+source .venv/bin/activate
 
-# Install dependencies (one-liner)
-pip3 install --user torch torchaudio torchvision jiwer "lightning>=2.0" matplotlib "datasets[audio]==2.18.0" soundfile librosa && pip3 install --user "numpy<2.0" --force-reinstall
-
-# Verify installation
-python3 -c "import torch, torchaudio, jiwer, lightning, datasets, numpy, matplotlib; print(' All dependencies installed successfully!')"
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-### Step-by-Step Installation
+For CUDA PyTorch, install the PyTorch wheel matching your CUDA version before or while installing the remaining dependencies. Example for CUDA 12.4:
 
-If the one-liner fails:
 ```bash
-# Step 1: Core PyTorch
-pip3 install --user torch torchaudio torchvision
-
-# Step 2: ML/ASR libraries
-pip3 install --user jiwer "lightning>=2.0"
-
-# Step 3: Audio processing (CRITICAL: specific version)
-pip3 install --user "datasets[audio]==2.18.0" soundfile librosa
-
-# Step 4: Plotting
-pip3 install --user matplotlib
-
-# Step 5: Fix NumPy compatibility (MUST be last)
-pip3 install --user "numpy<2.0" --force-reinstall
+pip install torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
+pip install -r requirements.txt
 ```
 
-## Dataset
+Mamba-1 acceleration requires `mamba-ssm` and `causal-conv1d`. Mamba-3/Triton scripts may require installation from GitHub and an A100/H100-class GPU. See `setup_guide.md`.
 
-This project uses the [LibriSpeech](https://www.openslr.org/12) corpus from Hugging Face.
+## Dataset preparation
 
-### Download Dataset
+Download and save LibriSpeech ASR splits in HuggingFace `save_to_disk` format:
 
-Use the provided notebook or download directly:
-```python
-from datasets import load_dataset
-
-# Download LibriSpeech (this will cache locally)
-dataset = load_dataset("openslr/librispeech_asr", "clean")
-
-# Save to disk for faster loading
-dataset.save_to_disk("./hub_data/librispeech")
-```
-
-Or run the `download_dataset.ipynb` notebook.
-
-## Usage
-
-### Training
 ```bash
-# Basic training with hierarchical initialization and gating (recommended)
-python IKT464_AST_SSSSM.py --data-path ./hub_data/librispeech --exp-name my_experiment
-
-# Baseline without hierarchical features
-python IKT464_AST_SSSSM.py --data-path ./hub_data/librispeech --no-hierarchical --no-gating --exp-name baseline
-
-# Custom configuration
-python IKT464_AST_SSSSM.py \
-    --data-path ./hub_data/librispeech \
-    --d-model 336 \
-    --n-layers 12 \
-    --batch-size 32 \
-    --epochs 30 \
-    --lr 1e-3 \
-    --exp-name custom_experiment
+python scripts/download_dataset.py
 ```
 
-### Key Arguments
+Expected dataset layout:
 
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--data-path` | `../hub_data/librispeech` | Path to LibriSpeech dataset |
-| `--dataset-config` | `100h` | Training set: `100h` or `460h` |
-| `--d-model` | `384` | Model dimension |
-| `--n-layers` | `8` | Number of encoder layers |
-| `--batch-size` | `32` | Training batch size |
-| `--epochs` | `30` | Number of training epochs |
-| `--lr` | `1e-3` | Learning rate |
-| `--no-hierarchical` | False | Disable hierarchical state dynamics |
-| `--no-gating` | False | Disable gating mechanism |
-| `--seed` | `456` | Random seed |
+```text
+hub_data/librispeech/
+├── clean/
+│   ├── train.100
+│   ├── train.360
+│   ├── validation
+│   └── test
+└── other/
+    ├── train.500
+    ├── validation
+    └── test
+```
 
-### Quick Test
+All ASR scripts should use:
+
 ```bash
-# Small-scale test to verify setup
-python IKT464_AST_SSSSM.py \
-    --data-path ./hub_data/librispeech \
-    --subset-train 4000 \
-    --subset-val 400 \
-    --d-model 64 \
-    --n-layers 6 \
-    --epochs 5 \
-    --exp-name test_run
+--data-path hub_data/librispeech
 ```
 
-## Pre-trained Models
+## Checkpoint placement
 
-Pre-trained model checkpoints are available on Hugging Face:
+See `CHECKPOINTS.md` for the full checkpoint layout. In brief:
 
-🤗 **[Roberh18/IKT464](https://huggingface.co/Roberh18/IKT464)**
+```text
+encoder_checkpoints/
+└── S-SSSM/
+    └── 960h/
+        └── <checkpoint>.ckpt
 
-### Available Checkpoints
-
-| Experiment | Configuration | Link |
-|------------|---------------|------|
-| exp-01 | Baseline W386×D9 | [best_model.ckpt](https://huggingface.co/Roberh18/IKT464/blob/main/experiments/exp-01_baseline_W386_D9/best_model.ckpt) |
-| exp-02 | Hier+Gate W358×D9 | [best_model.ckpt](https://huggingface.co/Roberh18/IKT464/blob/main/experiments/exp-02_hier_gating_W358_D9/best_model.ckpt) |
-| ... | More experiments | [Browse all](https://huggingface.co/Roberh18/IKT464/tree/main/experiments) |
-
-### Loading a Checkpoint
-```python
-import torch
-from IKT464_AST_SSSSM import SSMASRModel
-
-# Load checkpoint
-checkpoint = torch.load("path/to/best_model.ckpt")
-model = SSMASRModel.load_from_checkpoint("path/to/best_model.ckpt")
-model.eval()
+lm_checkpoints/
+├── elm_mamba_MaxChars-1000000000_d320_L18/
+│   └── elm_best.pt
+└── ngram/
+    └── char_10gram.pkl
 ```
 
-## Experiments
+The evaluation script accepts alternative checkpoint paths through:
 
-### Architecture Ablation 
 ```bash
-# Exp01: Baseline
-python IKT464_AST_SSSSM.py --no-hierarchical --no-gating --d-model 336 --n-layers 12 --exp-name baseline_W336_D12
-
-# Exp02: + Hierarchical
-python IKT464_AST_SSSSM.py --no-gating --d-model 336 --n-layers 12 --exp-name hier_W336_D12
-
-# Exp03: + Gating
-python IKT464_AST_SSSSM.py --no-hierarchical --d-model 312 --n-layers 12 --exp-name gating_W312_D12
-
-# Exp04: + Both (recommended)
-python IKT464_AST_SSSSM.py --d-model 312 --n-layers 12 --exp-name hier_gating_W312_D12
+--asr-checkpoint <path-to-encoder.ckpt>
+--elm-path <path-to-lm-dir-or-pkl>
 ```
 
-### Depth vs Width Analysis 
+## Quick smoke tests
 
-All configurations maintain ~8.6M parameters:
+These commands verify installation, dataset layout, and script entry points. They do not reproduce thesis results.
 
-| Depth | Width (Baseline) | Width (Hier+Gate) |
-|-------|------------------|-------------------|
-| 9 | 386 | 358 |
-| 12 | 336 | 312 |
-| 18 | 276 | 256 |
-| 24 | 240 | 222 |
-| 30 | 216 | 200 |
+### Dataset availability check
 
-## Troubleshooting
-
-### TorchCodec Errors
 ```bash
-pip3 uninstall -y torchcodec
-export HF_DATASETS_DISABLE_TORCHCODEC=1
+python scripts/download_dataset.py
 ```
 
-### NumPy Compatibility
+If the data is already downloaded, the script should still verify that the saved HuggingFace datasets can be reloaded.
+
+### Evaluation help check
+
 ```bash
-pip3 install --user "numpy<2.0" --force-reinstall
+python scripts/IKT590_evaluate_ASR_pipeline.py --help
 ```
 
-### Dataset Issues
+### S-SSSM tiny training run
+
 ```bash
-pip3 uninstall -y datasets
-pip3 install --user "datasets[audio]==2.18.0"
+python scripts/IKT590_train_ASR_encoder_SSSM.py \
+  --data-path hub_data/librispeech \
+  --subset-train 4000 \
+  --subset-val 400 \
+  --batch-size 16 \
+  --d-model 64 \
+  --n-layers 6 \
+  --epochs 2 \
+  --exp-name smoke_ssssm
 ```
 
-### CUDA Out of Memory
+### n-gram LM tiny training run
 
-- Reduce `--batch-size` (try 16 or 8)
-- Reduce `--d-model` or `--n-layers`
-- Use gradient accumulation (modify code)
+This requires a character-level training text file. If unavailable, create it using the same preprocessing used for the thesis experiments, or provide a small compatible file with one character-tokenized sentence per line.
 
-## Project Structure
+```bash
+python scripts/IKT590_train_LM_char_ngram.py \
+  --train-text lm_checkpoints/kenlm/char_level_text.txt \
+  --orders 7 \
+  --max-lines 10000 \
+  --output-dir lm_checkpoints/ngram_smoke
 ```
-IKT464/
-├── experiments/                       # Experiment outputs (checkpoints, logs)
-│   ├── exp-01_baseline_W386_D9/       # (best_model.ckpt ~100MB only on HuggingFace)
-│   ├── exp-02_hier_gating_W358_D9/    # (best_model.ckpt ~100MB only on HuggingFace)
-│   ├── exp-03_baseline_W336_D12/      # (best_model.ckpt ~100MB only on HuggingFace)
-│   │   ...
-│   └── exp-10_hier_gating_W200_D30/   # (best_model.ckpt ~100MB only on HuggingFace)
-├── src/                               # Source code
-│   ├── download_dataset.ipynb         # Dataset download notebook
-│   └── IKT464_AST_SSSSM.py            # Main training script
-├── README.md                          # This file
-└── requirements.txt                   # Python dependencies
+
+## Evaluation commands
+
+### Tune shallow-fusion weights
+
+```bash
+python scripts/IKT590_evaluate_ASR_pipeline.py \
+  --mode tune \
+  --data-path hub_data/librispeech \
+  --asr-checkpoint encoder_checkpoints/S-SSSM/960h/<checkpoint>.ckpt \
+  --asr-type sssm \
+  --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 \
+  --beam-width 10 \
+  --batch-size 64 \
+  --subset-val 1000 \
+  --exp-name tune_ssssm_charmamba1
 ```
+
+### Full evaluation
+
+```bash
+python scripts/IKT590_evaluate_ASR_pipeline.py \
+  --mode full_eval \
+  --data-path hub_data/librispeech \
+  --asr-checkpoint encoder_checkpoints/S-SSSM/960h/<checkpoint>.ckpt \
+  --asr-type sssm \
+  --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 \
+  --alpha <ALPHA> \
+  --beta <BETA> \
+  --beam-width 10 \
+  --batch-size 64 \
+  --exp-name eval_ssssm_charmamba1
+```
+
+### n-gram control evaluation
+
+```bash
+python scripts/IKT590_evaluate_ASR_pipeline.py \
+  --mode full_eval \
+  --data-path hub_data/librispeech \
+  --asr-checkpoint encoder_checkpoints/S-SSSM/960h/<checkpoint>.ckpt \
+  --asr-type sssm \
+  --elm-path lm_checkpoints/ngram/char_10gram.pkl \
+  --alpha <ALPHA> \
+  --beta 0.0 \
+  --beam-width 10 \
+  --batch-size 64 \
+  --exp-name eval_ssssm_ngram10
+```
+
+### RTFX measurement
+
+```bash
+python scripts/IKT590_evaluate_ASR_pipeline.py \
+  --mode rtfx \
+  --data-path hub_data/librispeech \
+  --asr-checkpoint encoder_checkpoints/S-SSSM/960h/<checkpoint>.ckpt \
+  --asr-type sssm \
+  --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 \
+  --alpha <ALPHA> \
+  --beta <BETA> \
+  --beam-width 10 \
+  --batch-size 64 \
+  --exp-name rtfx_ssssm_charmamba1
+```
+
+### Streaming verification
+
+```bash
+python scripts/IKT590_evaluate_ASR_pipeline.py \
+  --mode verify_streaming \
+  --data-path hub_data/librispeech \
+  --asr-checkpoint encoder_checkpoints/S-SSSM/960h/<checkpoint>.ckpt \
+  --asr-type sssm \
+  --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 \
+  --beam-width 10 \
+  --batch-size 16 \
+  --exp-name verify_streaming_charmamba1
+```
+
+### Hallucination and score analysis
+
+```bash
+python scripts/IKT590_evaluate_ASR_pipeline.py \
+  --mode hallucination \
+  --data-path hub_data/librispeech \
+  --asr-checkpoint encoder_checkpoints/S-SSSM/960h/<checkpoint>.ckpt \
+  --asr-type sssm \
+  --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 \
+  --alpha <ALPHA> \
+  --beta <BETA> \
+  --beam-width 10 \
+  --batch-size 64 \
+  --exp-name hallucination_ssssm_charmamba1
+
+python scripts/IKT590_evaluate_ASR_pipeline.py \
+  --mode score_analysis \
+  --data-path hub_data/librispeech \
+  --asr-checkpoint encoder_checkpoints/S-SSSM/960h/<checkpoint>.ckpt \
+  --asr-type sssm \
+  --elm-path lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18 \
+  --alpha <ALPHA> \
+  --beta <BETA> \
+  --beam-width 10 \
+  --batch-size 64 \
+  --exp-name score_analysis_ssssm_charmamba1
+```
+
+## Training commands
+
+Full training commands are expensive. Use them only with adequate GPU resources and disk space.
+
+### S-SSSM encoder
+
+Smoke test:
+
+```bash
+python scripts/IKT590_train_ASR_encoder_SSSM.py \
+  --data-path hub_data/librispeech \
+  --subset-train 4000 \
+  --subset-val 400 \
+  --batch-size 16 \
+  --d-model 64 \
+  --n-layers 6 \
+  --epochs 2 \
+  --exp-name smoke_ssssm
+```
+
+Full 960 h run:
+
+```bash
+python scripts/IKT590_train_ASR_encoder_SSSM.py \
+  --data-path hub_data/librispeech \
+  --dataset-config 960h \
+  --d-model 384 \
+  --n-layers 60 \
+  --batch-size 64 \
+  --seed 456 \
+  --epochs 50 \
+  --exp-name ssssm_960h
+```
+
+Uniform-initialization ablation:
+
+```bash
+python scripts/IKT590_train_ASR_encoder_SSSM.py \
+  --data-path hub_data/librispeech \
+  --dataset-config 100h \
+  --no-hierarchical \
+  --no-gating \
+  --d-model 200 \
+  --n-layers 24 \
+  --batch-size 64 \
+  --seed 456 \
+  --epochs 30 \
+  --exp-name sssm_uniform_100h
+```
+
+### Mamba-1 encoder
+
+```bash
+python scripts/IKT590_train_ASR_encoder_mamba-1.py \
+  --data-path hub_data/librispeech \
+  --dataset-config 100h \
+  --encoder-type mamba \
+  --d-model 256 \
+  --n-layers 12 \
+  --d-state 16 \
+  --batch-size 32 \
+  --seed 456 \
+  --epochs 30 \
+  --exp-name mamba1_100h
+```
+
+Pure PyTorch fallback, slower:
+
+```bash
+python scripts/IKT590_train_ASR_encoder_mamba-1.py \
+  --data-path hub_data/librispeech \
+  --dataset-config 100h \
+  --encoder-type mamba \
+  --no-cuda-kernels \
+  --d-model 128 \
+  --n-layers 6 \
+  --subset-train 2000 \
+  --subset-val 200 \
+  --epochs 3 \
+  --exp-name smoke_mamba1_pytorch
+```
+
+### Mamba-3 encoder
+
+Mamba-3 requires a compatible CUDA/Triton setup. See `setup_guide.md`.
+
+```bash
+python scripts/IKT590_train_ASR_encoder_mamba-3.py \
+  --data-path hub_data/librispeech \
+  --dataset-config 100h \
+  --encoder-type mamba3 \
+  --d-model 256 \
+  --n-layers 12 \
+  --d-state 64 \
+  --headdim 64 \
+  --batch-size 32 \
+  --seed 456 \
+  --epochs 30 \
+  --exp-name mamba3_100h
+```
+
+### CharMamba-1 LM
+
+```bash
+python scripts/IKT590_train_LM_CharMamba-1.py \
+  --lm-hf-dataset openslr/librispeech_lm \
+  --lm-max-chars 1000000000 \
+  --elm-d-model 320 \
+  --elm-n-layers 18 \
+  --elm-d-state 16 \
+  --lm-epochs 20 \
+  --lm-batch-size 64 \
+  --lm-lr 1e-3
+```
+
+Expected output:
+
+```text
+lm_checkpoints/elm_mamba_MaxChars-1000000000_d320_L18/
+├── elm_best.pt
+├── elm_hparams.json
+├── elm_history.json
+└── elm_training.log
+```
+
+### CharMamba-3 LM
+
+Verify Mamba-3 availability:
+
+```bash
+python scripts/IKT590_train_LM_CharMamba-3_Triton.py --mode verify
+```
+
+Train:
+
+```bash
+python scripts/IKT590_train_LM_CharMamba-3_Triton.py \
+  --mode train \
+  --lm-hf-dataset openslr/librispeech_lm \
+  --max-chars 1000000000 \
+  --d-model 320 \
+  --n-layers 18 \
+  --d-state 64 \
+  --headdim 64 \
+  --epochs 20 \
+  --batch-size 64 \
+  --accum-steps 2 \
+  --lr 1e-3
+```
+
+### Character n-gram LM
+
+```bash
+python scripts/IKT590_train_LM_char_ngram.py \
+  --train-text lm_checkpoints/kenlm/char_level_text.txt \
+  --orders 7,10 \
+  --output-dir lm_checkpoints/ngram
+```
+
+Quick version:
+
+```bash
+python scripts/IKT590_train_LM_char_ngram.py \
+  --train-text lm_checkpoints/kenlm/char_level_text.txt \
+  --orders 7 \
+  --max-lines 10000 \
+  --output-dir lm_checkpoints/ngram_smoke
+```
+
+## Optional analysis tools
+
+The evaluation script includes these analysis modes:
+
+- `rtfx`: decoding throughput and latency.
+- `hallucination`: confidence/probability quadrant analysis.
+- `score_analysis`: CTC and LM score breakdown with figures.
+- `verify_streaming`: verifies consistency between batch and streaming LM scoring.
+
+If the repository includes standalone diagnostic scripts such as `IKT590_lm_diagnostic.py` or `IKT590_lm_diagnostic_v2.py`, treat them as optional. They are useful for probing LM behavior, but they are not required for the final ASR evaluation path.
+
+## Legacy naming note
+
+Some code, checkpoint configs, and CLI flags retain legacy names such as:
+
+- `--no-hierarchical`
+- `use_hierarchical`
+- `HIER_CONFIG`
+- `--elm-hierarchical`
+
+These names are retained for compatibility with existing checkpoints and historical experiment commands. In final thesis terminology, this mechanism should be described as non-uniform layer-wise initialization, non-uniform initialization of decay/timescale parameters, or initialization diversity. It should not be presented as evidence for a proven acoustic-to-linguistic hierarchy.
+
+## Compute requirements
+
+CPU execution is suitable for `--help`, dataset layout checks, and very small n-gram tests. Encoder training requires a GPU for practical runtimes. Full 960 h LibriSpeech training and Mamba-3/Triton experiments require substantial compute and may require A100/H100 or otherwise compatible NVIDIA GPUs.
