@@ -1,8 +1,8 @@
 # Checkpoints and Model Artifacts
 
-This repository does not require large model files to be committed directly to Git. Place checkpoints and language-model artifacts in the directories below before running final evaluation.
+This repository does not checkpoints because these model files are too large to be committed directly to Git. Place checkpoints and language-model artifacts in the directories below before running final evaluation.
 
-Large files should be distributed through GitHub release assets, institutional storage, or external storage if they exceed practical GitHub limits.
+Large files should be accessible through Huggingface release assets, link in Thesis report.
 
 ## Expected layout
 
@@ -176,7 +176,7 @@ Optional artifacts include:
 - Diagnostic outputs and figures.
 - Intermediate training logs.
 
-These are not required for the default final evaluation path unless the examiner wants to reproduce the corresponding ablation or comparison.
+These are not required for the default final evaluation path.
 
 ## Alternative checkpoint paths
 
