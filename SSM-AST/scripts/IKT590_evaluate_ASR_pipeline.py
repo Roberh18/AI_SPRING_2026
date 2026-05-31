@@ -742,7 +742,7 @@ def load_lm(path, device='cuda'):
     
     # Python n-gram detection
     if path.endswith('.pkl'):
-        from IKT590_train_char_ngram import CharNgramLM
+        from IKT590_train_LM_char_ngram import CharNgramLM
         return CharNgramLM.load(path)
     
     # If path is a directory, check for various file types
@@ -766,7 +766,7 @@ def load_lm(path, device='cuda'):
     cfg = ckpt['config']
     
     if cfg['model_type'] == 'mamba3':
-        from IKT590_train_CharMamba3_LM_Triton_v1_1 import CharMamba3LM
+        from IKT590_train_LM_CharMamba3_Triton import CharMamba3LM
         model = CharMamba3LM(
             vocab_size=cfg['vocab_size'],
             d_model=cfg['d_model'],
@@ -1861,7 +1861,7 @@ def load_asr_model(checkpoint_path, asr_type='sssm', device='cuda'):
     
     elif asr_type == 'mamba':
         import importlib
-        mamba_mod = importlib.import_module('IKT590_Script_ASR_mamba_v2_1')
+        mamba_mod = importlib.import_module('IKT590_train_ASR_encoder_mamba1')
         
         encoder_type = hparams.get('encoder_type', 'mamba')
         d_state = hparams.get('d_state', 16)
@@ -1889,7 +1889,7 @@ def load_asr_model(checkpoint_path, asr_type='sssm', device='cuda'):
         import importlib.util
         _spec = importlib.util.spec_from_file_location(
             "mamba3_asr",
-            os.path.join(os.path.dirname(__file__), "IKT590_Script_ASR_mamba-3_v1_0.py")
+            os.path.join(os.path.dirname(__file__), "IKT590_train_ASR_encoder_mamba3.py")
         )
 
         mamba3_mod = importlib.util.module_from_spec(_spec)
