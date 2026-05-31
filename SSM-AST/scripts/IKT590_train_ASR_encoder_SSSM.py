@@ -1,5 +1,5 @@
 """
-Train S-SSSM (Selective Structured State Space Model) CTC encoder for ASR.
+Train S-SSSM (Simplified Selective State Space Model) CTC encoder for ASR.
 
 Implements an SSM encoder with non-uniform layer-wise initialization of
 decay/timescale parameters and optional gating for CTC-based automatic
